@@ -6,13 +6,13 @@
 	<title>TXST Navigation</title>
 	<link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body style="user-select:none;">
 	<div id="mapImgContainer">
 		<img id="mainMapImg" src="map_images/outside.png" class="fixed_position" style="z-index:-2; object-fit:cover;transform-origin: 0% 0%;">
 	</div>
 	<canvas id="overlay" class="fixed_position" style="z-index:-1;"></canvas>
 	
-	<div id="routePanel" class="ui_panel">
+	<span id="routePanel" class="ui_panel">
 		<table>
 			<tr>
 				<td>
@@ -37,13 +37,27 @@
 			</tr>
 		</table>
 		<button id="go_button">Go</button>
-	</div>
-	<div id="editorTools" style="display:none">
+	</span>
+	<br>
+	<span id="editorTools" style="display:none;">
 		<select id="layerSelect">
 		</select>
 		<br>
-		<p id="editorMode">Editor Mode: None</p>
-	</div>
+		<span style="pointer-events: none;">
+			<p id="editorMode">Editor Mode: None</p>
+			<b>== Editor Modes ==</b>
+			<p>[A] Add</p>
+			<p>[M] Move</p>
+			<p>[E] Edit</p>
+			<p>[C] Connect</p>
+			<p>[Esc] None</p>
+			<b>== Other Hotkeys ==</b>
+			<p>[D] Toggle drawing nodes</p>
+			<p>[P] Print layer to console</p>
+			<p>[Backspace] Delete selected node</p>
+		<p>[Delete] Delete selected node</div>
+		</span>
+	</span>
 
 	<script src="core.js"></script>
 </body>

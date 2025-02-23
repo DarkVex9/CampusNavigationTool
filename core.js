@@ -19,6 +19,7 @@ var isDragging = false;
 
 //Editor Specific Variables
 var editorAllowed = true;
+var editorMoveRange = 500;	//Max range that the move tool can grab a node from
 var editorStyle = {
 	nodeColor:"#42F5C2",
 	nodeRadius: 5,
@@ -27,6 +28,7 @@ var editorStyle = {
 	connectionWidth:3,
 	connectionHighlightColor:"#EDC618",
 	connectionHighlightWidth:5,
+	hintColor:"#C9C5A9"
 }
 var editorContainer = document.getElementById("editorTools");
 var editorLayerSelect = document.getElementById("layerSelect");
@@ -35,6 +37,7 @@ var editorMode = "none";
 var editorSelectedNode;
 var drawNodes = false;
 var tempConnectingNode;
+var tempIsHintDrawn = false;
 
 
 // ===== Other Initialization =====
@@ -46,7 +49,7 @@ document.addEventListener("mousemove",handleMouseMove);
 document.addEventListener("mouseup",handleMouseUp);
 document.addEventListener("wheel",handleScroll);
 editorLayerSelect.addEventListener("change",handleLayerDropdown);
-if(editorAllowed){editorContainer.style.display = "block";}
+if(editorAllowed){editorContainer.style.display = "inline-block";}
 
 
 
@@ -152,8 +155,8 @@ function handleKeyPress(event){
 		case "Delete":
 			//Delete selected node
 			if(editorAllowed && editorSelectedNode){
-				for(let i=0;i<editorSelectedNode.connections.length;i++){
-					disconnectNodes(editorSelectedNode,nodeGraph[editorSelectedNode.layer][editorSelectedNode.connections[i].id]);
+				while(editorSelectedNode.connections.length > 0){
+					disconnectNodes(editorSelectedNode,nodeGraph[editorSelectedNode.layer][editorSelectedNode.connections[0].id]);
 				}
 				nodeGraph[editorSelectedNode.layer][editorSelectedNode.id] = null;
 				editorSelectedNode = null;
@@ -176,14 +179,23 @@ function handleMouseDown(event){
 	if(event.button != 0){
 		return;		//don't need to do anything if it isn't a primary (left) click
 	}
-	if(event.target == canvas){
+	if(event.target == canvas || event.target == document.body){
 		if(!editorMode || editorMode == "none"){
 			isDragging = true;
 		}else if(editorMode == "move" || editorMode == "edit" || editorMode == "connect"){
+			
 			isDragging = true;
 			//console.log("Event Pos:",event.pageX,event.pageY);
 			//console.log("Adjusted Pos:",...canvasPosToPos(event.pageX,event.pageY))
 			editorSelectedNode = findNearestNode(...canvasPosToPos(event.pageX,event.pageY));
+			if(editorMode == "move"){
+				let cursorPos = canvasPosToPos(event.pageX,event.pageY)
+				let distance = Math.sqrt( Math.pow(editorSelectedNode.x-cursorPos[0],2) + Math.pow(editorSelectedNode.y-cursorPos[1],2) );
+				if(distance > (editorMoveRange/Math.sqrt(view.zoom))){
+					editorSelectedNode = null;
+					return;		//nearest node is outside max move range
+				}
+			}			
 			console.log("Selected Node",editorSelectedNode);
 			redraw();
 			console.log("Selected Node (id:"+editorSelectedNode.id+",x:"+editorSelectedNode.x+",y:"+editorSelectedNode.y+")");
@@ -219,7 +231,7 @@ function handleMouseUp(event){
 
 function handleMouseMove(event){
 	if(isDragging){
-		if(editorMode == "move"){
+		if(editorMode == "move" && editorSelectedNode){
 			let pos = canvasPosToPos(event.pageX,event.pageY)
 			moveNode(editorSelectedNode,...pos);
 			redraw();
@@ -241,6 +253,26 @@ function handleMouseMove(event){
 			//mapImgElement.style.left = view.x + "px";
 			//mapImgElement.style.top = view.y + "px";
 			redraw();
+		}
+	}else{
+		if(editorMode == "move"){
+			let cursorPos = canvasPosToPos(event.pageX,event.pageY)
+			let node = findNearestNode(...cursorPos);
+			let distance = Math.sqrt( Math.pow(node.x-cursorPos[0],2) + Math.pow(node.y-cursorPos[1],2) );
+			if(distance < (editorMoveRange/Math.sqrt(view.zoom))){
+				tempIsHintDrawn = true;
+				redraw();
+				ctx.strokeStyle = editorStyle.connectionHighlightColor;
+				ctx.strokeStyle = editorStyle.hintColor;
+				ctx.lineWidth = editorStyle.connectionHighlightWidth;
+				ctx.beginPath();
+				ctx.moveTo(event.pageX,event.pageY);
+				ctx.lineTo(...posToCanvasPos(node.x,node.y));
+				ctx.stroke();
+			}else if(tempIsHintDrawn){
+				tempIsHintDrawn = false;
+				redraw();
+			}
 		}
 	}
 }
@@ -347,6 +379,9 @@ function drawCircle(x,y,radius,color){
 }
 
 function drawPath(path){
+	if(path.includes(null)){
+		return;	//Something is wrong, abort
+	}
 	ctx.strokeStyle = pathColor;
 	ctx.lineWidth = pathWidth;
 	ctx.beginPath();
