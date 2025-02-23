@@ -1,0 +1,76 @@
+======= Finished Features =======
+
+Layers containing Nodes containing Connections
+
+Map and overlay with panning and zooming
+
+Basic path render on the overlay
+
+Basic editor node and connection rendering
+
+Basic editor controls
+ - Add
+ - Select
+ - Move
+ - Connect
+ - Disconnect
+ - Delete
+
+Several helper functions
+
+
+
+======= Work In Progress =======
+
+UI style, margins need to be set, overall look should be cleaned up
+
+Stubs/partial versions created for several functions
+
+
+
+======= To Do =======
+
+Way to edit flags and other data on nodes and connections
+
+File loading
+ - Decide what to do about CORS (find software to host it locally for testing? just have strings where file loading should be?)
+ - Add more layer metadata and be able to load it
+
+User settings
+ - avoid stairs
+ - avoid elevators
+
+Pathfinding algorithm
+ - recognise layer changes
+ - factor in layer scale
+ - account for user settings
+
+implement named node search
+ - do node names need to be unique?
+
+Editor could use more powerful controls
+ - shortcut to connect to the nearest unconnected node (shift click with connection tool?)
+ - nudge tool for moving nodes more accurately (arrow keys?)
+
+Do layout for a building
+
+Probably a dozen things I've forgotten about
+
+
+
+======= Stretch Goals =======
+
+More buildings mapped
+
+Clean up editor tools to be more user friendly
+
+Host on an actual server
+
+User reports of closures, incorrect data, etc
+
+GPS locating
+
+Wifi triangulation
+
+
+

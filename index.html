@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>TXST Navigation</title>
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+	<div id="mapImgContainer">
+		<img id="mainMapImg" src="map_images/outside.png" class="fixed_position" style="z-index:-2; object-fit:cover;transform-origin: 0% 0%;">
+	</div>
+	<canvas id="overlay" class="fixed_position" style="z-index:-1;"></canvas>
+	
+	<div id="routePanel" class="ui_panel">
+		<table>
+			<tr>
+				<td>
+					<p>TXST Campus Navigation</p>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<label for="origin" align="right">From:</label>
+				</td>
+				<td>
+					<input type="text" id="origin">
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<label for="destination" align="right">To:</label>
+				</td>
+				<td>
+					<input type="text" id="destination">
+				</td>
+			</tr>
+		</table>
+		<button id="go_button">Go</button>
+	</div>
+	<div id="editorTools" style="display:none">
+		<select id="layerSelect">
+		</select>
+		<br>
+		<p id="editorMode">Editor Mode: None</p>
+	</div>
+
+	<script src="core.js"></script>
+</body>
+</html>

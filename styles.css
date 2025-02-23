@@ -1,0 +1,19 @@
+/* All colors and pixel values here are arbitrary choices for testing*/
+
+.ui_panel {
+	background-color: #00008040;  /* Hex color with opacity at the end.*/
+	border-radius: 25px;
+	border: solid, 1px, #000000;
+	display: inline-block;
+}
+
+.fixed_position {
+	position: absolute;
+	left:0;
+	top:0;
+	margin:0;
+}
+
+body {
+	overflow:hidden;
+}
