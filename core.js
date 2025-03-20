@@ -421,24 +421,18 @@ function updateNodePanel(){
 			let connection = editorSelectedNode.connections[i];
 			let toName;
 			let layerName;
-			if("flags" in connection && connection.flags.includes("layerChange")){
-				if(connection.layer in nodeGraph && connection.id in nodeGraph[connection.layer]){
-					layerName = connection.layer;
-					toName = nodeGraph[connection.layer][connection.id].name;
+			if(!"flags" in connection || !connection.flags.includes("layerChange")){
+				if(nodeGraph[editorSelectedNode.layer][connection.id].name){
+					toName = nodeGraph[editorSelectedNode.layer][connection.id].name;
 				}else{
-					layerName = "Node or layer not set";
+					toName = " ";
 				}
-			}else{
-				toName = nodeGraph[editorSelectedNode.layer][connection.id].name;
-			}
-			if(toName == undefined){
-				toName = "";
 			}
 			let text
-			if(layerName){
-				text = document.createTextNode("->'"+toName+"' ("+layerName+")");
+			if(toName === undefined){
+				text = document.createTextNode("-> ");
 			}else{
-				text = document.createTextNode("->'"+toName+"'");
+				text = document.createTextNode("->'"+toName+"' ");
 			}
 			entry.appendChild(text);
 			if(connection.flags.includes("layerChange")){
@@ -448,8 +442,8 @@ function updateNodePanel(){
 			disconnectButton.appendChild(document.createTextNode(" X "));
 			disconnectButton.className = "right_align";
 			disconnectButton.addEventListener("click",function(event){
+				console.log("Disconnect Button",connection);
 				if(connection.id !== null){
-					console.log(connection);
 					if("layer" in connection){
 						disconnectNodes(editorSelectedNode,nodeGraph[connection.layer][connection.id]);
 					}else{
@@ -486,10 +480,12 @@ function createLayerChangeHTML(entry, connection){
 		layerChangeNodeDropdown.style.display = "none";
 	}
 	for(let i=0;i<loadedLayers.length;i++){
-		let layerChangeOption = document.createElement("option");
-		layerChangeOption.appendChild(document.createTextNode(loadedLayers[i]));
-		layerChangeOption.value = loadedLayers[i];
-		layerChangeDropdown.appendChild(layerChangeOption);
+		if(loadedLayers[i] != editorSelectedNode.layer){
+			let layerChangeOption = document.createElement("option");
+			layerChangeOption.appendChild(document.createTextNode(loadedLayers[i]));
+			layerChangeOption.value = loadedLayers[i];
+			layerChangeDropdown.appendChild(layerChangeOption);
+		}
 	}
 	if(connection.layer!==null){
 		layerChangeDropdown.value = connection.layer;
@@ -682,23 +678,47 @@ function disconnectNodes(node1,node2){
 	if(node1 == node2){
 		return;		//cannot disconnect a node from itself
 	}
-	let node1Index = node1.connections.map((x)=>{
-		if("layer" in x && x.layer == node2.layer){
-			return x.id;
-		}else{
-			return -1;
-		}
-	}).indexOf(node2.id);
-	let node2Index = node2.connections.map((x)=>{
-		if("layer" in x && x.layer == node1.layer){
-			return x.id;
-		}else{
-			return -1;
-		}
-	}).indexOf(node1.id);
+	//console.log("Disconnect Nodes",node1,node2);
+	let node1Index;
+	let node2Index;
+	if(node1.layer == node2.layer){
+		//Nodes are on the same layer, ignore layer change connections
+		node1Index = node1.connections.map((x)=>{
+			if(!("layer" in x)){
+				return x.id;
+			}else{
+				return -1;
+			}
+		}).indexOf(node2.id);
+		node2Index = node2.connections.map((x)=>{
+			if(!("layer" in x)){
+				return x.id;
+			}else{
+				return -1;
+			}
+		}).indexOf(node1.id);
+	}else{
+		//Nodes are on different layers, only look at layer change connections to the right layer
+		node1Index = node1.connections.map((x)=>{
+			if("layer" in x && x.layer == node2.layer){
+				return x.id;
+			}else{
+				return -1;
+			}
+		}).indexOf(node2.id);
+		node2Index = node2.connections.map((x)=>{
+			if("layer" in x && x.layer == node1.layer){
+				return x.id;
+			}else{
+				return -1;
+			}
+		}).indexOf(node1.id);
+	}
 	if(node1Index != -1 && node2Index != -1){
 		node1.connections.splice(node1Index,1);
 		node2.connections.splice(node2Index,1);
+	}else{
+		console.warn("Couldn't find connections to disconnect","Index1:"+node1Index,"Index2:"+node2Index);
 	}
 }
 
@@ -749,6 +769,7 @@ function prepLayer(layerName){
 function handleLayerDropdown(){
 	view.layer = editorLayerSelect.value;
 	redraw();
+	editorSelectedNode = null;
 }
 
 
