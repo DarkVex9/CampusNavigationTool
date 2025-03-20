@@ -55,7 +55,26 @@
 			<p>[D] Toggle drawing nodes</p>
 			<p>[P] Print layer to console</p>
 			<p>[Backspace] Delete selected node</p>
-		<p>[Delete] Delete selected node</div>
+			<p>[Delete] Delete selected node</p>
+		</span>
+		<span id="nodePanel" class="ui_panel" style="position:absolute;top:0px;right:0px">
+			<p>Node Metadata</p>
+			<hr>
+			<label for="nodeName">Room Name</label>
+			<input type="text" id="nodeName">
+			<hr>
+			<p>Flags:</p>
+			<input type="checkbox" id="isStairs">
+			<label for="isStairs">Stairs</label>
+			<br>
+			<input type="checkbox" id="isElevator">
+			<label for="isElevator">Elevator</label>
+			<hr>
+			<p>Connections:</p>
+			<div id="nodeConnections">
+			</div>
+			<hr>
+			<button id="addLayerChangeConnection">Add Layer Change Connection</button>
 		</span>
 	</span>
 

@@ -35,6 +35,7 @@ var editorLayerSelect = document.getElementById("layerSelect");
 var editorModeLabel = document.getElementById("editorMode");
 var editorMode = "none";
 var editorSelectedNode;
+var editorPanelNode;
 var drawNodes = false;
 var tempConnectingNode;
 var tempIsHintDrawn = false;
@@ -49,6 +50,10 @@ document.addEventListener("mousemove",handleMouseMove);
 document.addEventListener("mouseup",handleMouseUp);
 document.addEventListener("wheel",handleScroll);
 editorLayerSelect.addEventListener("change",handleLayerDropdown);
+document.getElementById("nodeName").addEventListener("input",handleNameField);
+document.getElementById("isStairs").addEventListener("change",handleFlags);
+document.getElementById("isElevator").addEventListener("change",handleFlags);
+document.getElementById("addLayerChangeConnection").addEventListener("click",handleAddLayerChangeConnection);
 if(editorAllowed){editorContainer.style.display = "inline-block";}
 
 
@@ -61,7 +66,6 @@ loadLayerFromJSON(loadFile("derrick_test"));
 currentPath = nodeGraph["outside"];
 //Yes, the current test points aren't connected the same way the path is. That was intentional for easy testing of the drawing stuff.
 redraw();
-
 
 
 if(!loadedLayers.includes("outside")){view.layer = null}
@@ -92,18 +96,23 @@ function handleGoButton(){
 
 function handleKeyPress(event){
 	//console.log("Key Pressed - "+event.key);
+	if(event.target.tagName == "INPUT"){
+		return;	//Don't process keybaord shortcuts when typing
+	}
 	switch(event.key){
 		case "p":
 			//"Print" current layer data
 			if(editorAllowed){
-				quantizeNodePositions();
-				console.log(JSON.stringify({name:view.layer,metadata:layerData[view.layer],graph:nodeGraph[view.layer],namedNodes:namedNodes[view.layer]}));
+				cleanNodeGraph();
+				let stringJSON = JSON.stringify({name:view.layer,metadata:layerData[view.layer],graph:nodeGraph[view.layer],namedNodes:namedNodes[view.layer]})
+				navigator.clipboard.writeText(stringJSON);
+				console.log(stringJSON);
 			}
 			break;
 		case "u":
 			//temp test key for quantizing coordinates to save space in string form
 			if(editorAllowed){
-				quantizeNodePositions();
+				cleanNodeGraph();
 			}
 			break;
 		case "a":
@@ -171,11 +180,19 @@ function handleKeyPress(event){
 				redraw();
 			}
 			break;
+		case "l":
+			//Load layer data manually by pasting in JSON
+			if(editorAllowed){
+				let inputJSON = window.prompt("Enter layer JSON:");
+				if(inputJSON){
+					loadLayerFromJSON(inputJSON);
+				}
+			}
 	}
 }
 
 function handleMouseDown(event){
-	console.log("Mouse Down");
+	//console.log("Mouse Down",event.button);
 	if(event.button != 0){
 		return;		//don't need to do anything if it isn't a primary (left) click
 	}
@@ -221,6 +238,7 @@ function handleMouseUp(event){
 				console.log("Connected Nodes", editorSelectedNode, node2);
 				connectNodes(editorSelectedNode,node2);
 				redraw();
+				forceUpdateNodePanel();
 			}
 		}else{
 			console.log("Cannot connect node to itself.");
@@ -368,6 +386,208 @@ function redraw(){
 			drawCircle(editorSelectedNode.x,editorSelectedNode.y,editorStyle.nodeRadius,editorStyle.nodeHighlightColor);
 			drawCircle(editorSelectedNode.x,editorSelectedNode.y,editorStyle.nodeRadius/2,editorStyle.nodeHighlightColor);
 		}
+		updateNodePanel();
+	}
+}
+
+function updateNodePanel(){
+	if(editorSelectedNode == editorPanelNode){
+		return;
+	}
+	document.getElementById("nodeName").value = "";
+	document.getElementById("isStairs").checked = false;
+	document.getElementById("isElevator").checked = false;
+	let connectionList  = document.getElementById("nodeConnections");
+	while (connectionList.lastChild) {
+		connectionList .removeChild(connectionList.lastChild);
+	}
+	if(editorSelectedNode){
+		editorPanelNode = editorSelectedNode;
+		if(editorSelectedNode.name){
+			document.getElementById("nodeName").value = editorSelectedNode.name;
+		}else{
+			document.getElementById("nodeName").value = "";
+		}
+		if("flags" in editorSelectedNode){
+			document.getElementById("isStairs").checked = editorSelectedNode.flags.includes("stairs");
+			document.getElementById("isElevator").checked = editorSelectedNode.flags.includes("elevator");
+		}
+		let connectionList = document.getElementById("nodeConnections");
+		while (connectionList.lastChild) {
+			connectionList.removeChild(connectionList.lastChild);
+		}
+		for(let i=0;i<editorSelectedNode.connections.length;i++){
+			let entry = document.createElement("div");
+			let connection = editorSelectedNode.connections[i];
+			let toName;
+			let layerName;
+			if("flags" in connection && connection.flags.includes("layerChange")){
+				if(connection.layer in nodeGraph && connection.id in nodeGraph[connection.layer]){
+					layerName = connection.layer;
+					toName = nodeGraph[connection.layer][connection.id].name;
+				}else{
+					layerName = "Node or layer not set";
+				}
+			}else{
+				toName = nodeGraph[editorSelectedNode.layer][connection.id].name;
+			}
+			if(toName == undefined){
+				toName = "";
+			}
+			let text
+			if(layerName){
+				text = document.createTextNode("->'"+toName+"' ("+layerName+")");
+			}else{
+				text = document.createTextNode("->'"+toName+"'");
+			}
+			entry.appendChild(text);
+			if(connection.flags.includes("layerChange")){
+				createLayerChangeHTML(entry,connection);
+			}
+			let disconnectButton = document.createElement("button");
+			disconnectButton.appendChild(document.createTextNode(" X "));
+			disconnectButton.className = "right_align";
+			disconnectButton.addEventListener("click",function(event){
+				if(connection.id !== null){
+					console.log(connection);
+					if("layer" in connection){
+						disconnectNodes(editorSelectedNode,nodeGraph[connection.layer][connection.id]);
+					}else{
+						disconnectNodes(editorSelectedNode,nodeGraph[editorSelectedNode.layer][connection.id]);
+					}
+				}else{
+					editorSelectedNode.connections.splice(editorSelectedNode.connections.indexOf(connection),1);
+				}
+				redraw();
+				forceUpdateNodePanel();
+			});
+			entry.appendChild(disconnectButton);
+			connectionList.appendChild(entry);
+		}
+		//console.log(connectionList);
+	}else{
+		editorPanelNode = null;
+	}
+}
+
+function forceUpdateNodePanel(){
+	editorPanelNode = null;
+	updateNodePanel();
+}
+
+function createLayerChangeHTML(entry, connection){
+	let layerChangeDropdown = document.createElement("select");
+	let layerChangeNodeDropdown = document.createElement("select");
+	if(connection.layer===null){
+		let layerChangeOption = document.createElement("option");
+		layerChangeOption.appendChild(document.createTextNode("-"));
+		layerChangeOption.value = null;
+		layerChangeDropdown.appendChild(layerChangeOption);
+		layerChangeNodeDropdown.style.display = "none";
+	}
+	for(let i=0;i<loadedLayers.length;i++){
+		let layerChangeOption = document.createElement("option");
+		layerChangeOption.appendChild(document.createTextNode(loadedLayers[i]));
+		layerChangeOption.value = loadedLayers[i];
+		layerChangeDropdown.appendChild(layerChangeOption);
+	}
+	if(connection.layer!==null){
+		layerChangeDropdown.value = connection.layer;
+		if(loadedLayers.includes(connection.layer)){
+			layerChangeNodeDropdown.style.display = "initial";
+			if(connection.id === null){
+				let layerChangeNodeOption = document.createElement("option");
+				layerChangeNodeOption.appendChild(document.createTextNode("-"));
+				layerChangeNodeOption.value = null;
+				layerChangeNodeDropdown.appendChild(layerChangeNodeOption);
+			}
+			for(let i=0;i<namedNodes[connection.layer].length;i++){
+				if(namedNodes[connection.layer][i].connections.find((x)=>{return x.flags.includes("layerChange")})){
+					let layerChangeNodeOption = document.createElement("option");
+					layerChangeNodeOption.appendChild(document.createTextNode(namedNodes[connection.layer][i].name));
+					layerChangeNodeOption.value = namedNodes[connection.layer][i].id;
+					layerChangeNodeDropdown.appendChild(layerChangeNodeOption);
+				}
+			}
+			if(connection.id !== null){
+				layerChangeNodeDropdown.value = connection.id;
+			}
+			layerChangeNodeDropdown.addEventListener("change",function(event){
+				let targetID = parseInt(event.target.value);
+				connection.id = targetID;
+				for(let searchIndex = 0; searchIndex < nodeGraph[connection.layer][targetID].connections.length; searchIndex++){
+					let searchConnection = nodeGraph[connection.layer][targetID].connections[searchIndex];
+					if(searchConnection.id === null){
+						searchConnection.id = editorSelectedNode.id;
+						searchConnection.layer = editorSelectedNode.layer;
+						break;
+					}
+				}
+			});
+		}
+	}
+	layerChangeDropdown.addEventListener("change",function(event){
+		connection.layer = event.target.value;
+		layerChangeNodeDropdown.style.display = "initial";
+		forceUpdateNodePanel();
+	});
+	entry.appendChild(layerChangeDropdown);
+	entry.appendChild(layerChangeNodeDropdown);
+}
+
+function handleAddLayerChangeConnection(){
+	if(editorSelectedNode){
+		console.log("Add layer change node");
+		connectNodeToNull(editorSelectedNode);
+		forceUpdateNodePanel();
+	}
+}
+
+function handleNameField(){
+	if(editorSelectedNode){
+		editorSelectedNode.name = document.getElementById("nodeName").value;
+		if(editorSelectedNode.name != ""){
+			if(!namedNodes[editorSelectedNode.layer].some((x)=>{return x.id == editorSelectedNode.id})){
+				namedNodes[editorSelectedNode.layer].push(editorSelectedNode);
+			}
+		}else{
+			let index = namedNodes[editorSelectedNode.layer].findIndex((x)=>{x.id == editorSelectedNode.id})
+			if(index != -1){
+				namedNodes[editorSelectedNode.layer].splice(index,1);
+			}
+		}
+	}
+}
+
+function handleFlags(){
+	if(editorSelectedNode){
+		if(!("flags" in editorSelectedNode)){
+			editorSelectedNode.flags = [];
+		}
+		if(document.getElementById("isStairs").checked){
+			if(!editorSelectedNode.flags.includes("stairs")){
+				editorSelectedNode.flags.push("stairs");
+			}
+		}else{
+			if(editorSelectedNode.flags.includes("stairs")){
+				let index = editorSelectedNode.flags.indexOf("stairs");
+				if (index !== -1) {
+					editorSelectedNode.flags.splice(index, 1);
+				}
+			}
+		}
+		if(document.getElementById("isElevator").checked){
+			if(!editorSelectedNode.flags.includes("elevator")){
+				editorSelectedNode.flags.push("elevator");
+			}
+		}else{
+			if(editorSelectedNode.flags.includes("stairs")){
+				let index = editorSelectedNode.flags.indexOf("elevator");
+				if (index !== -1) {
+					editorSelectedNode.flags.splice(index, 1);
+				}
+			}
+		}
 	}
 }
 
@@ -435,7 +655,7 @@ function createNode(layer,x,y,name=""){
 	return node;
 }
 
-function connectNodes(node1,node2,flags){
+function connectNodes(node1,node2,flags=[]){
 	if(node1 == node2){
 		return;		//cannot connect a node to itself
 	}
@@ -444,23 +664,41 @@ function connectNodes(node1,node2,flags){
 	}
 	if(node1.layer == node2.layer){
 		let distance = Math.sqrt( Math.pow(node1.x-node2.x,2) + Math.pow(node1.y-node2.y,2) );
-		node1.connections.push({id:node2.id,distance:distance,flags:[]});
-		node2.connections.push({id:node1.id,distance:distance,flags:[]});
+		node1.connections.push({id:node2.id,distance:distance,flags:[...flags]});
+		node2.connections.push({id:node1.id,distance:distance,flags:[...flags]});
 	}else{
-		node1.connections.push({id:node2.id,layer:node2.layer,flags:["layerChange"]});
-		node2.connections.push({id:node1.id,layer:node1.layer,flags:["layerChange"]});
+		node1.connections.push({id:node2.id,layer:node2.layer,flags:["layerChange",...flags]});
+		node2.connections.push({id:node1.id,layer:node1.layer,flags:["layerChange",...flags]});
 	}
 }
+
+
+function connectNodeToNull(node1,flags=[]){
+	node1.connections.push({id:null,layer:null,flags:["layerChange",...flags]});
+}
+
 
 function disconnectNodes(node1,node2){
 	if(node1 == node2){
 		return;		//cannot disconnect a node from itself
 	}
-	let node1Index = node1.connections.map((x)=>x.id).indexOf(node2.id);
-	let node2Index = node2.connections.map((x)=>x.id).indexOf(node1.id);
+	let node1Index = node1.connections.map((x)=>{
+		if("layer" in x && x.layer == node2.layer){
+			return x.id;
+		}else{
+			return -1;
+		}
+	}).indexOf(node2.id);
+	let node2Index = node2.connections.map((x)=>{
+		if("layer" in x && x.layer == node1.layer){
+			return x.id;
+		}else{
+			return -1;
+		}
+	}).indexOf(node1.id);
 	if(node1Index != -1 && node2Index != -1){
 		node1.connections.splice(node1Index,1);
-		node2.connections.splice(node2Index,2);
+		node2.connections.splice(node2Index,1);
 	}
 }
 
@@ -483,14 +721,17 @@ function moveNode(node,x,y){
 	}
 }
 
-function quantizeNodePositions(layer = view.layer){
+function cleanNodeGraph(layer = view.layer){
 	for(let i=0;i<nodeGraph[view.layer].length;i++){
-		node = nodeGraph[view.layer][i]
-		if(!nodeGraph[view.layer][i]){
+		let node = nodeGraph[view.layer][i]
+		if(!node){
 			continue;
 		}
 		//moveNode(node, Math.round(node.x*10)/10, Math.round(node.y*10)/10);
 		moveNode(node, Math.round(node.x), Math.round(node.y));
+		if("flags" in node && node.flags.length == 0){
+			delete node.flags;
+		}
 	}
 	redraw();
 }
@@ -538,6 +779,9 @@ function loadLayerFromJSON(layerString){
 	let obj = JSON.parse(layerString);
 	if(loadedLayers.includes(obj.name)){
 		console.log("Layer already loaded - "+obj.name);
+		//delete layerData[obj.name];
+		//delete nodeGraph[obj.name];
+		//delete namedNodes[obj.name];
 		return;
 	}
 	loadedLayers.push(obj.name);
