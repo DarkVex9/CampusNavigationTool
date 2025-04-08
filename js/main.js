@@ -5,6 +5,10 @@
 // Global variables
 var editorAllowed = true; // Whether editor tools are allowed
 
+view.zoom = 1.5;
+view.x = -100;
+view.y = -50;
+
 // Initialize the application
 function init() {
     console.log("Initializing Navigation Application");

@@ -7,265 +7,477 @@ var nodeGraph = {};      // Each loaded layer is a property containing an array 
 var namedNodes = {};     // Each loaded layer is a property containing an array of all named nodes
 var loadedLayers = [];   // Array of layers loaded stored in string form
 var layerData = {};      // Each loaded layer is a property containing metadata about the layer
-var loadingCount = 0;    // Count of files being loaded
+var areas = {};          // Each loaded layer is a property containing an array of all areas
 var currentPath;         // Stores currently drawn path if there is one
+var polygonPoints = [];  // Points for polygon drawing
+var isDrawingPolygon = false; // Flag for polygon drawing state
+
+// Area types with colors and properties
+const areaTypes = {
+  classroom: { name: "Classroom", color: "#B3E5FC" },
+  office: { name: "Office", color: "#C8E6C9" },
+  elevator: { name: "Elevator", color: "#F8BBD0" },
+  stairs: { name: "Stairs", color: "#FFE0B2" },
+  hallway: { name: "Hallway", color: "#F5F5F5" },
+  entrance: { name: "Entrance", color: "#BBDEFB" },
+  restroom: { name: "Restroom", color: "#E1BEE7" }
+};
 
 // Node types with colors and icons
 const nodeTypes = {
-    regular: { name: "Regular", color: "#42F5C2" },
-    entrance: { name: "Entrance", color: "#4286f5" },
-    elevator: { name: "Elevator", color: "#f542e3" },
-    stairs: { name: "Stairs", color: "#f5a742" },
-    restroom: { name: "Restroom", color: "#42b6f5" },
-    accessible: { name: "Accessible", color: "#42f56f" }
+  regular: { name: "Regular", color: "#666666" },
+  entrance: { name: "Entrance", color: "#BBDEFB" },
+  elevator: { name: "Elevator", color: "#F8BBD0" },
+  stairs: { name: "Stairs", color: "#FFE0B2" },
+  restroom: { name: "Restroom", color: "#E1BEE7" }
 };
 
 // Find a node by name
 function findByName(searchString) {
-    searchString = searchString.trim().toLowerCase();
+  if (!searchString) return null;
+  searchString = searchString.trim().toLowerCase();
+  
+  // First try exact match
+  for (let i = 0; i < loadedLayers.length; i++) {
+    const layer = loadedLayers[i];
     
-    // First try exact match
-    for (let i = 0; i < loadedLayers.length; i++) {
-        const layer = loadedLayers[i];
-        
-        for (let j = 0; j < namedNodes[layer].length; j++) {
-            const namedNode = namedNodes[layer][j];
-            const node = nodeGraph[layer][namedNode.id];
-            
-            if (node && namedNode.name && namedNode.name.toLowerCase() === searchString) {
-                return node;
-            }
-        }
+    if (!namedNodes[layer]) continue;
+    
+    for (let j = 0; j < namedNodes[layer].length; j++) {
+      const namedNode = namedNodes[layer][j];
+      if (!namedNode) continue;
+      
+      const node = nodeGraph[layer][namedNode.id];
+      
+      if (node && namedNode.name && namedNode.name.toLowerCase() === searchString) {
+        return node;
+      }
     }
+  }
+  
+  // Then try contains match
+  for (let i = 0; i < loadedLayers.length; i++) {
+    const layer = loadedLayers[i];
     
-    // Then try contains match
-    for (let i = 0; i < loadedLayers.length; i++) {
-        const layer = loadedLayers[i];
-        
-        for (let j = 0; j < namedNodes[layer].length; j++) {
-            const namedNode = namedNodes[layer][j];
-            const node = nodeGraph[layer][namedNode.id];
-            
-            if (node && namedNode.name && namedNode.name.toLowerCase().includes(searchString)) {
-                return node;
-            }
-        }
+    if (!namedNodes[layer]) continue;
+    
+    for (let j = 0; j < namedNodes[layer].length; j++) {
+      const namedNode = namedNodes[layer][j];
+      if (!namedNode) continue;
+      
+      const node = nodeGraph[layer][namedNode.id];
+      
+      if (node && namedNode.name && namedNode.name.toLowerCase().includes(searchString)) {
+        return node;
+      }
     }
-    
-    return null; // No match found
+  }
+  
+  return null; // No match found
 }
 
 // Find the nearest node to a point
 function findNearestNode(x, y, layer = view.layer) {
-    let bestNode;
-    let bestDistance = Number.MAX_VALUE;
-    
-    for (let i = 0; i < nodeGraph[layer].length; i++) {
-        if (!nodeGraph[layer][i]) {
-            continue;
-        }
-        
-        let node = nodeGraph[layer][i];
-        let workingDistance = Math.pow(x - node.x, 2) + Math.pow(y - node.y, 2);
-        
-        if (workingDistance < bestDistance) {
-            bestNode = node;
-            bestDistance = workingDistance;
-        }
+  if (!nodeGraph[layer] || nodeGraph[layer].length === 0) {
+    return null;
+  }
+  
+  let bestNode;
+  let bestDistance = Number.MAX_VALUE;
+  
+  for (let i = 0; i < nodeGraph[layer].length; i++) {
+    if (!nodeGraph[layer][i]) {
+      continue;
     }
     
-    return bestNode;
-}
-
-// File loading functions
-function loadFile(fileName) {
-    // Track the number of files being loaded to avoid searching an incomplete map
-    loadingCount++;
-
-    // Handle local file loading (mockup for testing)
-    if (window.location.protocol == "file:") {
-        loadingCount--;
-        switch (fileName) {
-            case "test file":
-                return "test file contents";
-            case "outside":
-                return '{"name":"outside","metadata":{"imgScale":1,"mapImage":"outside.png"},"graph":[{"id":0,"x":0,"y":0,"layer":"outside","connections":[{"id":1,"distance":80,"flags":[]},{"id":2,"distance":113.13708498984761,"flags":[]},{"id":3,"distance":186.01075237738274,"flags":[]}]},{"id":1,"x":80,"y":0,"layer":"outside","connections":[{"id":0,"distance":80,"flags":[]},{"id":2,"distance":80,"flags":[]}]},{"id":2,"x":80,"y":80,"layer":"outside","connections":[{"id":0,"distance":113.13708498984761,"flags":[]},{"id":1,"distance":80,"flags":[]}]},{"id":3,"x":110,"y":150,"layer":"outside","connections":[{"id":0,"distance":186.01075237738274,"flags":[]}]}],"namedNodes":[]}';
-            case "derrick_test":
-                return '{"name":"test","metadata":{"imgScale":1,"mapImage":"derrick temp.jpg"},"graph":[null,null,{"id":2,"x":309,"y":360,"layer":"test","connections":[{"id":14,"distance":30,"flags":[]},{"id":6,"distance":39,"flags":[]},{"id":3,"distance":118.00423721205946,"flags":[]}]},{"id":3,"x":427,"y":361,"layer":"test","connections":[{"id":2,"distance":118.00423721205946,"flags":[]},{"id":7,"distance":37.12142238654117,"flags":[]},{"id":4,"distance":107,"flags":[]},{"id":19,"distance":39.01281840626232,"flags":[]}]},{"id":4,"x":534,"y":361,"layer":"test","connections":[{"id":3,"distance":107,"flags":[]},{"id":8,"distance":30.14962686336267,"flags":[]},{"id":17,"distance":25.079872407968907,"flags":[]}]},{"id":5,"x":669,"y":361,"layer":"test","connections":[{"id":10,"distance":28.071337695236398,"flags":[]},{"id":11,"distance":37.12142238654117,"flags":[]},{"id":12,"distance":36.05551275463989,"flags":[]},{"id":13,"distance":108.01851693112621,"flags":[]}]},{"id":6,"x":309,"y":321,"layer":"test","connections":[{"id":2,"distance":39,"flags":[]}]},{"id":7,"x":424,"y":324,"layer":"test","connections":[{"id":3,"distance":37.12142238654117,"flags":[]}]},{"id":8,"x":537,"y":331,"layer":"test","connections":[{"id":4,"distance":30.14962686336267,"flags":[]}]},{"id":9,"x":643,"y":325,"layer":"test","connections":[{"id":10,"distance":37.45430139037795,"flags":[]}]},{"id":10,"x":641,"y":363,"layer":"test","connections":[{"id":5,"distance":28.071337695236398,"flags":[]},{"id":17,"distance":82,"flags":[]}]},{"id":11,"x":672,"y":324,"layer":"test","connections":[{"id":5,"distance":37.12142238654117,"flags":[]}]},{"id":12,"x":667,"y":397,"layer":"test","connections":[{"id":5,"distance":36.05551275463989,"flags":[]}]},{"id":13,"x":777,"y":363,"layer":"test","connections":[{"id":5,"distance":108.01851693112621,"flags":[]}]},{"id":14,"x":309,"y":390,"layer":"test","connections":[{"id":16,"distance":68.00735254367721,"flags":[]},{"id":15,"distance":36.013886210738214,"flags":[]},{"id":2,"distance":30,"flags":[]}]},{"id":15,"x":273,"y":389,"layer":"test","connections":[{"id":14,"distance":36.013886210738214,"flags":[]}]},{"id":16,"x":308,"y":458,"layer":"test","connections":[{"id":14,"distance":68.00735254367721,"flags":[]}]},{"id":17,"x":559,"y":363,"layer":"test","connections":[{"id":4,"distance":25.079872407968907,"flags":[]},{"id":10,"distance":82,"flags":[]},{"id":18,"distance":34.0147027033899,"flags":[]}]},{"id":18,"x":558,"y":397,"layer":"test","connections":[{"id":17,"distance":34.0147027033899,"flags":[]}]},{"id":19,"x":428,"y":400,"layer":"test","connections":[{"id":3,"distance":39.01281840626232,"flags":[]}]}],"namedNodes":[]}';
-        }
-    } else {
-        // TODO: Proper file loading via AJAX/fetch
-        // For now, returning null to prevent errors
-        loadingCount--;
-        return null;
+    let node = nodeGraph[layer][i];
+    let workingDistance = Math.pow(x - node.x, 2) + Math.pow(y - node.y, 2);
+    
+    if (workingDistance < bestDistance) {
+      bestNode = node;
+      bestDistance = workingDistance;
     }
-}
-
-function loadLayerFromJSON(layerString) {
-    if (!layerString) return;
-    
-    let obj = JSON.parse(layerString);
-    if (loadedLayers.includes(obj.name)) {
-        console.log("Layer already loaded - " + obj.name);
-        return;
-    }
-    
-    loadedLayers.push(obj.name);
-    layerData[obj.name] = obj.metadata;
-    nodeGraph[obj.name] = obj.graph;
-    namedNodes[obj.name] = obj.namedNodes;
-    
-    // Add to layer select in UI
-    addLayerToSelect(obj.name);
-    
-    console.log("Loaded layer - " + obj.name);
+  }
+  
+  return bestNode;
 }
 
 // Add a layer to the layer select dropdown
 function addLayerToSelect(layerName) {
-    let option = document.createElement("option");
-    option.value = layerName;
-    option.appendChild(document.createTextNode(layerName));
-    document.getElementById("layerSelect").appendChild(option);
+  const option = document.createElement("option");
+  option.value = layerName;
+  
+  // Format display name (e.g., "floor1" -> "Floor 1")
+  let displayName = layerName;
+  if (layerName === "outside") {
+    displayName = "Outside";
+  } else if (layerName.startsWith("floor")) {
+    displayName = "Floor " + layerName.substring(5);
+  }
+  
+  option.appendChild(document.createTextNode(displayName));
+  document.getElementById("layerSelect").appendChild(option);
 }
-
-// Initialize with test data
-function initializeTestData() {
-    loadLayerFromJSON(loadFile("outside"));
-    loadLayerFromJSON(loadFile("derrick_test"));
-    
-    if (!loadedLayers.includes("outside")) {
-        view.layer = null;
-    }
-    
-    if (!view.layer && loadedLayers.length > 0) {
-        view.layer = loadedLayers[0];
-    }
-}
-
-// Get user accessibility preferences
-function getUserPreferences() {
-    return {
-        avoidStairs: document.getElementById('avoidStairs').checked,
-        avoidElevators: document.getElementById('avoidElevators').checked
-    };
-}
-
-// Add this debug function to data.js 
-function debugMapLoading() {
-    console.log("Current view layer:", view.layer);
-    console.log("Loaded layers:", loadedLayers);
-    console.log("Layer data:", layerData);
-    
-    if (view.layer && layerData[view.layer]) {
-        console.log("Current map image path:", "map_images/" + layerData[view.layer].mapImage);
-        
-        // Check if the image file exists
-        const img = new Image();
-        img.onload = function() {
-            console.log("Map image loaded successfully");
-        };
-        img.onerror = function() {
-            console.error("Failed to load map image:", "map_images/" + layerData[view.layer].mapImage);
-            console.log("Please ensure the image file exists and the path is correct");
-        };
-        img.src = "map_images/" + layerData[view.layer].mapImage;
-    } else {
-        console.error("Invalid layer or missing layer data");
-    }
-}
-
-// Add this to main.js after initializeTestData()
-function checkMapSetup() {
-    // Ensure view.layer is set
-    if (!view.layer && loadedLayers.length > 0) {
-        view.layer = loadedLayers[0];
-    }
-    
-    // Log debug info
-    debugMapLoading();
-    
-    // Force redraw
-    redraw();
-}
-
-// Update the init function in main.js
-function init() {
-    console.log("Initializing Navigation Application");
-    
-    // Initialize UI
-    initUI();
-    
-    // Load test data
-    initializeTestData();
-    
-    // Check map setup
-    checkMapSetup();
-    
-    // Initial render
-    redraw();
-}
-
-var areas = {};  // Each loaded layer is a property containing an array of all areas
 
 // Define a new area
 function createArea(layer, name, type, points) {
-    if (!areas[layer]) {
-        areas[layer] = [];
-    }
-    
-    const id = areas[layer].length;
-    const area = {
-        id: id,
-        name: name,
-        type: type,
-        points: points,
-        layer: layer,
-        nodes: []  // IDs of nodes associated with this area
-    };
-    
-    areas[layer].push(area);
-    return area;
+  if (!areas[layer]) {
+    areas[layer] = [];
+  }
+  
+  // Generate new ID
+  const id = areas[layer].length > 0 ? 
+    Math.max(...areas[layer].map(a => a.id)) + 1 : 1;
+  
+  const area = {
+    id: id,
+    name: name,
+    type: type,
+    points: points,
+    layer: layer,
+    nodes: []  // IDs of nodes associated with this area
+  };
+  
+  areas[layer].push(area);
+  return area;
 }
 
 // Associate a node with an area
 function associateNodeWithArea(node, area) {
+  if (!area.nodes) {
+    area.nodes = [];
+  }
+  
+  if (!area.nodes.includes(node.id)) {
     area.nodes.push(node.id);
+  }
 }
 
-// Draw areas in ui.js
-function drawAreas() {
-    if (!areas[view.layer]) return;
+// Check if a point is inside a polygon
+function isPointInPolygon(x, y, points) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].x, yi = points[i].y;
+    const xj = points[j].x, yj = points[j].y;
     
-    for (const area of areas[view.layer]) {
-        // Set fill color based on area type
-        ctx.fillStyle = getAreaColor(area.type);
-        ctx.strokeStyle = "#666";
-        ctx.lineWidth = 1;
-        
-        // Draw the polygon
-        ctx.beginPath();
-        ctx.moveTo(...posToCanvasPos(area.points[0].x, area.points[0].y));
-        
-        for (let i = 1; i < area.points.length; i++) {
-            ctx.lineTo(...posToCanvasPos(area.points[i].x, area.points[i].y));
-        }
-        
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        
-        // Draw area name
-        // Calculate center point of the polygon
-        const centerX = area.points.reduce((sum, p) => sum + p.x, 0) / area.points.length;
-        const centerY = area.points.reduce((sum, p) => sum + p.y, 0) / area.points.length;
-        
-        ctx.fillStyle = "#333";
-        ctx.font = "12px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(area.name, ...posToCanvasPos(centerX, centerY));
-        
-        // Draw area icon if needed
-        drawAreaIcon(area);
+    const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+// Draw areas
+function drawAreas() {
+  if (!areas[view.layer]) return;
+  
+  for (const area of areas[view.layer]) {
+    if (!area || !area.points || area.points.length < 3) continue;
+    
+    // Set fill color based on area type
+    ctx.fillStyle = areaTypes[area.type]?.color || "#EEEEEE";
+    ctx.globalAlpha = 0.8; // Semi-transparent
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+    
+    // Draw the polygon
+    ctx.beginPath();
+    ctx.moveTo(...posToCanvasPos(area.points[0].x, area.points[0].y));
+    
+    for (let i = 1; i < area.points.length; i++) {
+      ctx.lineTo(...posToCanvasPos(area.points[i].x, area.points[i].y));
     }
+    
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1; // Reset alpha
+    ctx.stroke();
+    
+    // Draw area name
+    const centerX = area.points.reduce((sum, p) => sum + p.x, 0) / area.points.length;
+    const centerY = area.points.reduce((sum, p) => sum + p.y, 0) / area.points.length;
+    
+    ctx.fillStyle = "#333";
+    ctx.font = "12px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(area.name, ...posToCanvasPos(centerX, centerY));
+    
+    // Draw area icon if needed
+    drawAreaIcon(area, centerX, centerY);
+    
+    // Highlight selected area
+    if (editorSelectedArea && area.id === editorSelectedArea.id) {
+      ctx.strokeStyle = "#ff3b30";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath();
+      ctx.moveTo(...posToCanvasPos(area.points[0].x, area.points[0].y));
+      
+      for (let i = 1; i < area.points.length; i++) {
+        ctx.lineTo(...posToCanvasPos(area.points[i].x, area.points[i].y));
+      }
+      
+      ctx.closePath();
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+}
+
+// Draw area icon
+function drawAreaIcon(area, centerX, centerY) {
+  // Only draw icons for special types: elevator, stairs, entrance
+  if (!["elevator", "stairs", "entrance"].includes(area.type)) return;
+  
+  const iconX = area.points[0].x + 10;
+  const iconY = area.points[0].y + 10;
+  const [canvasX, canvasY] = posToCanvasPos(iconX, iconY);
+  
+  // Create a small white circle background
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(canvasX, canvasY, 10, 0, 2 * Math.PI);
+  ctx.fill();
+  
+  // Draw the icon
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 1.5;
+  
+  if (area.type === "elevator") {
+    // Elevator icon
+    ctx.beginPath();
+    ctx.rect(canvasX - 6, canvasY - 6, 12, 12);
+    ctx.moveTo(canvasX - 3, canvasY - 3);
+    ctx.lineTo(canvasX + 3, canvasY - 3);
+    ctx.moveTo(canvasX - 3, canvasY);
+    ctx.lineTo(canvasX + 3, canvasY);
+    ctx.moveTo(canvasX - 3, canvasY + 3);
+    ctx.lineTo(canvasX + 3, canvasY + 3);
+    ctx.stroke();
+  } else if (area.type === "stairs") {
+    // Stairs icon
+    ctx.beginPath();
+    ctx.moveTo(canvasX - 6, canvasY + 6);
+    ctx.lineTo(canvasX - 6, canvasY + 2);
+    ctx.lineTo(canvasX, canvasY + 2);
+    ctx.lineTo(canvasX, canvasY - 2);
+    ctx.lineTo(canvasX + 6, canvasY - 2);
+    ctx.lineTo(canvasX + 6, canvasY - 6);
+    ctx.stroke();
+  } else if (area.type === "entrance") {
+    // Entrance icon
+    ctx.beginPath();
+    ctx.moveTo(canvasX - 5, canvasY - 6);
+    ctx.lineTo(canvasX + 5, canvasY - 6);
+    ctx.lineTo(canvasX + 5, canvasY + 6);
+    ctx.lineTo(canvasX - 5, canvasY + 6);
+    ctx.closePath();
+    ctx.moveTo(canvasX, canvasY - 6);
+    ctx.lineTo(canvasX, canvasY + 6);
+    ctx.stroke();
+  }
+}
+
+// Initialize with test data
+function initializeTestData() {
+  // Add test floors/layers
+  const layers = ['outside', 'floor1', 'floor2'];
+  
+  for (const layer of layers) {
+    if (!loadedLayers.includes(layer)) {
+      loadedLayers.push(layer);
+      nodeGraph[layer] = [];
+      namedNodes[layer] = [];
+      areas[layer] = [];
+      layerData[layer] = { 
+        imgScale: 1, 
+        mapImage: `${layer}.png` 
+      };
+      
+      // Add to layer select
+      addLayerToSelect(layer);
+    }
+  }
+  
+  // Set default layer
+  view.layer = 'floor1';
+  document.getElementById('layerSelect').value = view.layer;
+  
+  // Add sample data for floor1
+  if (areas['floor1'].length === 0) {
+    // Add rooms
+    const room101 = createArea(
+      'floor1',
+      'Room 101',
+      'classroom',
+      [
+        {x: 100, y: 100}, 
+        {x: 200, y: 100}, 
+        {x: 200, y: 200}, 
+        {x: 100, y: 200}
+      ]
+    );
+    
+    const room102 = createArea(
+      'floor1',
+      'Room 102',
+      'office',
+      [
+        {x: 220, y: 100}, 
+        {x: 320, y: 100}, 
+        {x: 320, y: 200}, 
+        {x: 220, y: 200}
+      ]
+    );
+    
+    const elevator = createArea(
+      'floor1',
+      'Elevator',
+      'elevator',
+      [
+        {x: 340, y: 100}, 
+        {x: 380, y: 100}, 
+        {x: 380, y: 140}, 
+        {x: 340, y: 140}
+      ]
+    );
+    
+    const stairs = createArea(
+      'floor1',
+      'Stairs',
+      'stairs',
+      [
+        {x: 340, y: 160}, 
+        {x: 380, y: 160}, 
+        {x: 380, y: 200}, 
+        {x: 340, y: 200}
+      ]
+    );
+    
+    const hallway = createArea(
+      'floor1',
+      'Hallway',
+      'hallway',
+      [
+        {x: 100, y: 220}, 
+        {x: 380, y: 220}, 
+        {x: 380, y: 240}, 
+        {x: 100, y: 240}
+      ]
+    );
+    
+    // Create nodes for each area
+    const room101Node = generateNodesForArea(room101);
+    const room102Node = generateNodesForArea(room102);
+    const elevatorNode = generateNodesForArea(elevator);
+    elevatorNode.type = "elevator";
+    
+    const stairsNode = generateNodesForArea(stairs);
+    stairsNode.type = "stairs";
+    
+    const hallwayNode1 = createNode('floor1', 150, 230, 'Hallway 1');
+    associateNodeWithArea(hallwayNode1, hallway);
+    
+    const hallwayNode2 = createNode('floor1', 360, 230, 'Hallway 2');
+    associateNodeWithArea(hallwayNode2, hallway);
+    
+    // Connect nodes
+    connectNodes(room101Node, hallwayNode1);
+    connectNodes(room102Node, hallwayNode2);
+    connectNodes(hallwayNode1, hallwayNode2);
+    connectNodes(hallwayNode2, elevatorNode);
+    connectNodes(hallwayNode2, stairsNode);
+    
+    // Add floor 2 elements
+    const room201 = createArea(
+      'floor2',
+      'Room 201',
+      'classroom',
+      [
+        {x: 100, y: 100}, 
+        {x: 200, y: 100}, 
+        {x: 200, y: 200}, 
+        {x: 100, y: 200}
+      ]
+    );
+    
+    const elevator2 = createArea(
+      'floor2',
+      'Elevator Floor 2',
+      'elevator',
+      [
+        {x: 340, y: 100}, 
+        {x: 380, y: 100}, 
+        {x: 380, y: 140}, 
+        {x: 340, y: 140}
+      ]
+    );
+    
+    const room201Node = generateNodesForArea(room201);
+    const elevator2Node = generateNodesForArea(elevator2);
+    elevator2Node.type = "elevator";
+    
+    // Connect these nodes
+    connectNodes(room201Node, elevator2Node);
+    
+    // Create layer connections
+    connectNodes(elevatorNode, elevator2Node);
+    
+    // Add entrance on outside layer
+    const entrance = createArea(
+      'outside',
+      'Main Entrance',
+      'entrance',
+      [
+        {x: 150, y: 150}, 
+        {x: 200, y: 150}, 
+        {x: 200, y: 180}, 
+        {x: 150, y: 180}
+      ]
+    );
+    
+    const entranceNode = generateNodesForArea(entrance);
+    entranceNode.type = "entrance";
+  }
+  
+  // Refresh suggestions
+  populateSuggestions();
+}
+
+// Find area by name
+function findAreaByName(name) {
+  if (!name) return null;
+  name = name.trim().toLowerCase();
+  
+  // Try exact match first
+  for (const layer of loadedLayers) {
+    if (!areas[layer]) continue;
+    
+    const area = areas[layer].find(a => a.name && a.name.toLowerCase() === name);
+    if (area) return area;
+  }
+  
+  // Then try partial match
+  for (const layer of loadedLayers) {
+    if (!areas[layer]) continue;
+    
+    const area = areas[layer].find(a => a.name && a.name.toLowerCase().includes(name));
+    if (area) return area;
+  }
+  
+  return null;
+}
+
+// Find area at a point
+function findAreaAtPoint(x, y, layer = view.layer) {
+  if (!areas[layer]) return null;
+  
+  for (const area of areas[layer]) {
+    if (isPointInPolygon(x, y, area.points)) {
+      return area;
+    }
+  }
+  
+  return null;
 }

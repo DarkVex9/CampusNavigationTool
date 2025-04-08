@@ -1,221 +1,217 @@
 /**
- * editor.js - Map editor functionality
+ * editor.js - Map editor functionality with enhanced UI
  */
 
 // Editor settings
-var editorAllowed = true;
-var editorMoveRange = 500;   // Max range that the move tool can grab a node from
 var editorMode = "none";
 var editorSelectedNode;
 var editorSelectedArea;
-
-// Polygon drawing state - moved to data.js to make sure it's accessible
-// var polygonPoints = [];  
-// var isDrawingPolygon = false;
+var editorMoveRange = 500; // Max range that the move tool can grab a node from
 var tempConnectingNode;
 var tempIsHintDrawn = false;
 
 // Handle key press events
 function handleKeyPress(event) {
+    // Skip if inside an input field
+    if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA" || event.target.tagName === "SELECT") {
+        return;
+    }
+
     console.log("Key Pressed - " + event.key);
     
     switch(event.key) {
         case "p":
-            if (editorAllowed) {
-                if (event.ctrlKey || event.metaKey) {
-                    // "Print" current layer data with Ctrl+P
-                    quantizeNodePositions();
-                    console.log(JSON.stringify({
-                        name: view.layer,
-                        metadata: layerData[view.layer],
-                        graph: nodeGraph[view.layer],
-                        namedNodes: namedNodes[view.layer],
-                        areas: areas[view.layer] || []
-                    }));
-                } else {
-                    // "Polygon" editor mode with just P
-                    console.log("Editor Mode - Polygon");
-                    editorMode = "polygon";
-                    editorModeLabel.innerText = "Editor Mode: Polygon";
-                    polygonPoints = [];
-                    isDrawingPolygon = true;
-                    
-                    // Clear selection
-                    editorSelectedNode = null;
-                    editorSelectedArea = null;
-                }
-            }
-            break;
-        case "u":
-            // Quantize coordinates to save space in string form
-            if (editorAllowed) {
+            if (event.ctrlKey || event.metaKey) {
+                // "Print" current layer data
                 quantizeNodePositions();
+                console.log(JSON.stringify({
+                    name: view.layer,
+                    metadata: layerData[view.layer],
+                    graph: nodeGraph[view.layer],
+                    namedNodes: namedNodes[view.layer],
+                    areas: areas[view.layer] || []
+                }));
+            } else {
+                // "Polygon" editor mode
+                setEditorMode("polygon");
             }
             break;
         case "a":
             // "Add" editor mode
-            if (editorAllowed) {
-                console.log("Editor Mode - Add");
-                editorMode = "add";
-                editorModeLabel.innerText = "Editor Mode: Add";
-                editorSelectedArea = null;
-            }
+            setEditorMode("add");
             break;
         case "m":
             // "Move" editor mode
-            if (editorAllowed) {
-                console.log("Editor Mode - Move");
-                editorMode = "move";
-                editorModeLabel.innerText = "Editor Mode: Move";
-                editorSelectedArea = null;
-            }
+            setEditorMode("move");
             break;
         case "e":
             // "Edit" editor mode
-            if (editorAllowed) {
-                console.log("Editor Mode - Edit");
-                editorMode = "edit";
-                editorModeLabel.innerText = "Editor Mode: Edit";
-                
-                // Show node panel if a node is already selected
-                if (editorSelectedNode) {
-                    console.log("Showing node panel for selected node");
-                    showNodePanel(editorSelectedNode);
-                    editorSelectedArea = null;
-                } else {
-                    console.log("No node selected yet");
-                }
-            }
+            setEditorMode("edit");
             break;
         case "c":
             // "Connect" editor mode
-            if (editorAllowed) {
-                console.log("Editor Mode - Connect");
-                editorMode = "connect";
-                editorModeLabel.innerText = "Editor Mode: Connect";
-                editorSelectedArea = null;
-            }
+            setEditorMode("connect");
             break;
         case "r":
-            // "Area" editor mode - for selecting and editing areas
-            if (editorAllowed) {
-                console.log("Editor Mode - Area");
-                editorMode = "area";
-                editorModeLabel.innerText = "Editor Mode: Area";
-                editorSelectedNode = null;
-            }
+            // "Area" editor mode
+            setEditorMode("area");
             break;
         case "Escape":
-            // Clear editor mode
-            if (editorAllowed) {
-                // Clear selected node if we are already in mode none
-                if (editorMode == "none") {
-                    editorSelectedNode = null;
-                    editorSelectedArea = null;
-                    redraw();
-                }
-                
-                // Cancel polygon drawing if active
-                if (isDrawingPolygon) {
-                    isDrawingPolygon = false;
-                    polygonPoints = [];
-                }
-                
-                console.log("Editor Mode - None");
-                editorMode = "none";
-                editorModeLabel.innerText = "Editor Mode: None";
-                
-                // Hide node panel
-                nodePanel.style.display = "none";
-                
-                // Hide area panel if it exists
-                if (document.getElementById("areaPanel")) {
-                    document.getElementById("areaPanel").style.display = "none";
-                }
+            // Exit editor mode
+            if (editorMode === "none") {
+                // Clear selection if already in none mode
+                editorSelectedNode = null;
+                editorSelectedArea = null;
+                redraw();
             }
+            
+            // Cancel polygon drawing if active
+            if (isDrawingPolygon) {
+                isDrawingPolygon = false;
+                polygonPoints = [];
+            }
+            
+            setEditorMode("none");
+            
+            // Hide panels
+            document.getElementById("nodePanel").style.display = "none";
+            const areaPanel = document.getElementById("areaPanel");
+            if (areaPanel) areaPanel.style.display = "none";
             break;
         case "Backspace":
         case "Delete":
             // Delete selected node or area
-            if (editorAllowed) {
-                if (editorSelectedNode) {
-                    while(editorSelectedNode.connections.length > 0) {
-                        disconnectNodes(editorSelectedNode, nodeGraph[editorSelectedNode.layer][editorSelectedNode.connections[0].id]);
-                    }
-                    nodeGraph[editorSelectedNode.layer][editorSelectedNode.id] = null;
-                    editorSelectedNode = null;
-                    redraw();
-                    
-                    // Hide node panel
-                    nodePanel.style.display = "none";
-                } else if (editorSelectedArea && editorMode === "area") {
-                    // Remove associated nodes first
-                    if (editorSelectedArea.nodes && editorSelectedArea.nodes.length > 0) {
-                        for (const nodeId of editorSelectedArea.nodes) {
-                            const node = nodeGraph[editorSelectedArea.layer][nodeId];
-                            if (node) {
-                                // Disconnect node before removal
-                                while(node.connections.length > 0) {
-                                    disconnectNodes(node, nodeGraph[node.layer][node.connections[0].id]);
-                                }
-                                nodeGraph[node.layer][nodeId] = null;
-                            }
-                        }
-                    }
-                    
-                    // Remove the area
-                    const areaIndex = areas[view.layer].findIndex(a => a.id === editorSelectedArea.id);
-                    if (areaIndex !== -1) {
-                        areas[view.layer].splice(areaIndex, 1);
-                    }
-                    
-                    editorSelectedArea = null;
-                    redraw();
-                    
-                    // Hide area panel if it exists
-                    if (document.getElementById("areaPanel")) {
-                        document.getElementById("areaPanel").style.display = "none";
-                    }
-                }
+            if (editorSelectedNode) {
+                deleteSelectedNode();
+            } else if (editorSelectedArea && editorMode === "area") {
+                deleteSelectedArea();
             }
             break;
         case "d":
             // Toggle "Draw" nodes
-            if (editorAllowed) {
-                drawNodes = !drawNodes;
-                console.log("Draw Nodes " + (drawNodes ? "Enabled" : "Disabled"));
-                redraw();
-            }
+            drawNodes = !drawNodes;
+            console.log("Draw Nodes " + (drawNodes ? "Enabled" : "Disabled"));
+            redraw();
             break;
         case "z":
             // Auto-connect nearby area nodes
-            if (editorAllowed && (event.ctrlKey || event.metaKey)) {
+            if (event.ctrlKey || event.metaKey) {
                 console.log("Auto-connecting area nodes");
                 autoConnectAreaNodes();
                 redraw();
             }
             break;
+        case "x":
+            // Export map data
+            if (event.ctrlKey || event.metaKey) {
+                console.log("Exporting map data");
+                exportMapData();
+            }
+            break;
     }
+}
+
+// Delete the selected node
+function deleteSelectedNode() {
+    if (!editorSelectedNode) return;
+    
+    // Disconnect all connections first
+    while(editorSelectedNode.connections.length > 0) {
+        const connNode = editorSelectedNode.connections[0].layer ?
+            nodeGraph[editorSelectedNode.connections[0].layer][editorSelectedNode.connections[0].id] :
+            nodeGraph[editorSelectedNode.layer][editorSelectedNode.connections[0].id];
+        
+        if (connNode) {
+            disconnectNodes(editorSelectedNode, connNode);
+        } else {
+            // Handle invalid connection - just remove it
+            editorSelectedNode.connections.splice(0, 1);
+        }
+    }
+    
+    // Remove the node from any areas it's associated with
+    if (areas[editorSelectedNode.layer]) {
+        areas[editorSelectedNode.layer].forEach(area => {
+            if (area.nodes) {
+                const index = area.nodes.indexOf(editorSelectedNode.id);
+                if (index !== -1) {
+                    area.nodes.splice(index, 1);
+                }
+            }
+        });
+    }
+    
+    // Remove from node graph
+    nodeGraph[editorSelectedNode.layer][editorSelectedNode.id] = null;
+    
+    // Remove from named nodes if it has a name
+    if (editorSelectedNode.name) {
+        const index = namedNodes[editorSelectedNode.layer].findIndex(
+            n => n.id === editorSelectedNode.id
+        );
+        if (index !== -1) {
+            namedNodes[editorSelectedNode.layer].splice(index, 1);
+        }
+        
+        // Refresh suggestions
+        populateSuggestions();
+    }
+    
+    // Clear selection and hide panel
+    editorSelectedNode = null;
+    document.getElementById("nodePanel").style.display = "none";
+    
+    redraw();
+}
+
+// Delete the selected area
+function deleteSelectedArea() {
+    if (!editorSelectedArea) return;
+    
+    // Remove associated nodes first
+    if (editorSelectedArea.nodes && editorSelectedArea.nodes.length > 0) {
+        for (const nodeId of editorSelectedArea.nodes) {
+            const node = nodeGraph[editorSelectedArea.layer][nodeId];
+            if (node) {
+                // Make node the selected node and delete it
+                editorSelectedNode = node;
+                deleteSelectedNode();
+            }
+        }
+    }
+    
+    // Remove the area
+    const areaIndex = areas[view.layer].findIndex(a => a.id === editorSelectedArea.id);
+    if (areaIndex !== -1) {
+        areas[view.layer].splice(areaIndex, 1);
+    }
+    
+    // Clear selection and hide panel
+    editorSelectedArea = null;
+    const areaPanel = document.getElementById("areaPanel");
+    if (areaPanel) areaPanel.style.display = "none";
+    
+    // Refresh suggestions as area names might be used
+    populateSuggestions();
+    
+    redraw();
 }
 
 // Handle mouse down events
 function handleMouseDown(event) {
-    console.log("Mouse Down - Button:", event.button, "Position:", event.pageX, event.pageY);
-    
-    if (event.button != 0) {
-        return;     // don't need to do anything if it isn't a primary (left) click
+    if (event.button !== 0) {
+        return; // Only handle left clicks
     }
     
-    if (event.target == canvas || event.target == document.body || event.target.tagName === "IMG") {
-        if (!editorMode || editorMode == "none") {
-            console.log("Starting drag (pan view)");
+    if (event.target === canvas || event.target === document.body || event.target.tagName === "IMG") {
+        if (editorMode === "none") {
+            // Start panning
             isDragging = true;
-        } else if (editorMode == "move" || editorMode == "edit" || editorMode == "connect") {
+        } else if (editorMode === "move" || editorMode === "edit" || editorMode === "connect") {
             isDragging = true;
-            const worldPos = debugMousePosition(event, "select node");
+            const worldPos = canvasPosToPos(event.pageX, event.pageY);
             
-            const nearestNode = findNearestNode(...worldPos);
-            console.log("Nearest node:", nearestNode);
+            const nearestNode = findNearestNode(worldPos[0], worldPos[1]);
             
             if (!nearestNode) {
                 console.warn("No nodes found in the current layer");
@@ -224,36 +220,39 @@ function handleMouseDown(event) {
             
             editorSelectedNode = nearestNode;
             
-            if (editorMode == "move") {
-                let distance = Math.sqrt(Math.pow(editorSelectedNode.x - worldPos[0], 2) + 
-                                        Math.pow(editorSelectedNode.y - worldPos[1], 2));
-                console.log("Distance to nearest node:", distance, "Max range:", editorMoveRange / Math.sqrt(view.zoom));
+            if (editorMode === "move") {
+                // Check if node is within range
+                const distance = Math.sqrt(
+                    Math.pow(editorSelectedNode.x - worldPos[0], 2) + 
+                    Math.pow(editorSelectedNode.y - worldPos[1], 2)
+                );
                 
                 if (distance > (editorMoveRange / Math.sqrt(view.zoom))) {
                     console.log("Node too far, deselecting");
                     editorSelectedNode = null;
-                    return;     // nearest node is outside max move range
+                    return; // nearest node is outside max move range
                 }
             }
             
-            console.log("Selected Node:", editorSelectedNode);
-            
             // Show node panel in edit mode
-            if (editorMode == "edit") {
-                console.log("Edit mode - showing node panel");
+            if (editorMode === "edit") {
                 showNodePanel(editorSelectedNode);
             }
             
             redraw();
-        } else if (editorMode == "add") {
-            const worldPos = debugMousePosition(event, "add node");
-            console.log("Adding node at world position:", worldPos);
+        } else if (editorMode === "add") {
+            const worldPos = canvasPosToPos(event.pageX, event.pageY);
             
-            editorSelectedNode = createNode(view.layer, ...worldPos);
+            editorSelectedNode = createNode(view.layer, worldPos[0], worldPos[1]);
             console.log("Node added:", editorSelectedNode);
             
+            // If in edit mode, show the node panel immediately
+            if (editorMode === "edit") {
+                showNodePanel(editorSelectedNode);
+            }
+            
             redraw();
-        } else if (editorMode == "polygon") {
+        } else if (editorMode === "polygon") {
             if (isDrawingPolygon) {
                 const worldPos = canvasPosToPos(event.pageX, event.pageY);
                 console.log("Adding polygon point at:", worldPos);
@@ -261,7 +260,7 @@ function handleMouseDown(event) {
                 redraw();
                 drawPolygonInProgress();
             }
-        } else if (editorMode == "area") {
+        } else if (editorMode === "area") {
             // Select an area when in area mode
             const worldPos = canvasPosToPos(event.pageX, event.pageY);
             editorSelectedArea = findAreaAtPoint(worldPos[0], worldPos[1]);
@@ -271,70 +270,74 @@ function handleMouseDown(event) {
                 showAreaPanel(editorSelectedArea);
             } else {
                 console.log("No area found at click position");
-                if (document.getElementById("areaPanel")) {
-                    document.getElementById("areaPanel").style.display = "none";
+                const areaPanel = document.getElementById("areaPanel");
+                if (areaPanel) {
+                    areaPanel.style.display = "none";
                 }
             }
             
             redraw();
         }
-    } else {
-        console.log("Click was on a UI element, not handling in editor");
     }
 }
 
 // Handle mouse up events
 function handleMouseUp(event) {
-    if (event.button != 0) {
-        return;     // don't need to do anything if it isn't a primary (left) click
+    if (event.button !== 0) {
+        return; // Only handle left clicks
     }
     
-    if (editorMode == "connect") {
-        let node2 = findNearestNode(...canvasPosToPos(event.pageX, event.pageY));
-        if (editorSelectedNode && node2 && editorSelectedNode != node2) {
-            if (editorSelectedNode.connections.map((x) => x.id).includes(node2.id)) {
+    if (editorMode === "connect" && editorSelectedNode) {
+        const worldPos = canvasPosToPos(event.pageX, event.pageY);
+        let node2 = findNearestNode(worldPos[0], worldPos[1]);
+        
+        if (node2 && editorSelectedNode !== node2) {
+            if (editorSelectedNode.connections.some(c => c.id === node2.id)) {
                 console.log("Disconnected Nodes", editorSelectedNode, node2);
                 disconnectNodes(editorSelectedNode, node2);
-                redraw();
             } else {
                 console.log("Connected Nodes", editorSelectedNode, node2);
                 connectNodes(editorSelectedNode, node2);
-                redraw();
             }
-        } else {
-            console.log("Cannot connect node to itself or no nodes available.");
+            redraw();
         }
     }
+    
     isDragging = false;
 }
 
 // Handle mouse move events
 function handleMouseMove(event) {
     if (isDragging) {
-        if (editorMode == "move" && editorSelectedNode) {
-            let pos = canvasPosToPos(event.pageX, event.pageY);
-            moveNode(editorSelectedNode, ...pos);
+        if (editorMode === "move" && editorSelectedNode) {
+            // Move the selected node
+            const pos = canvasPosToPos(event.pageX, event.pageY);
+            moveNode(editorSelectedNode, pos[0], pos[1]);
             redraw();
-        } else if (editorMode == "connect" && editorSelectedNode) {
-            let node2 = findNearestNode(...canvasPosToPos(event.pageX, event.pageY));
-            if (node2 && tempConnectingNode != node2) {
+        } else if (editorMode === "connect" && editorSelectedNode) {
+            // Draw rubber-band line to nearest node
+            const worldPos = canvasPosToPos(event.pageX, event.pageY);
+            let node2 = findNearestNode(worldPos[0], worldPos[1]);
+            
+            if (node2 && tempConnectingNode !== node2) {
                 redraw();
                 tempConnectingNode = node2;
+                
+                // Draw potential connection line
                 ctx.strokeStyle = editorStyle.connectionHighlightColor;
                 ctx.lineWidth = editorStyle.connectionHighlightWidth;
                 ctx.beginPath();
                 ctx.moveTo(...posToCanvasPos(editorSelectedNode.x, editorSelectedNode.y));
                 ctx.lineTo(...posToCanvasPos(node2.x, node2.y));
                 ctx.stroke();
-            } 
-        } else if (editorMode == "polygon" && isDrawingPolygon && polygonPoints.length > 0) {
-            // Draw a rubber-band line from the last point to current mouse position
+            }
+        } else if (editorMode === "polygon" && isDrawingPolygon && polygonPoints.length > 0) {
+            // Draw rubber-band line from last point to cursor
             redraw();
             drawPolygonInProgress();
             
-            // Draw the line to cursor
+            // Draw line to cursor
             const lastPoint = polygonPoints[polygonPoints.length - 1];
-            const cursorPos = canvasPosToPos(event.pageX, event.pageY);
             
             ctx.strokeStyle = "#42F5C2";
             ctx.lineWidth = 2;
@@ -343,19 +346,28 @@ function handleMouseMove(event) {
             ctx.lineTo(event.pageX, event.pageY);
             ctx.stroke();
         } else {
-            view.x = view.x + event.movementX / view.zoom;
-            view.y = view.y + event.movementY / view.zoom;
+            // Pan the view
+            view.x += event.movementX / view.zoom;
+            view.y += event.movementY / view.zoom;
             redraw();
         }
     } else {
-        if (editorMode == "move") {
-            let cursorPos = canvasPosToPos(event.pageX, event.pageY);
-            let node = findNearestNode(...cursorPos);
+        // Not dragging - show hints or previews
+        if (editorMode === "move") {
+            const cursorPos = canvasPosToPos(event.pageX, event.pageY);
+            const node = findNearestNode(cursorPos[0], cursorPos[1]);
+            
             if (node) {
-                let distance = Math.sqrt(Math.pow(node.x - cursorPos[0], 2) + Math.pow(node.y - cursorPos[1], 2));
+                const distance = Math.sqrt(
+                    Math.pow(node.x - cursorPos[0], 2) + 
+                    Math.pow(node.y - cursorPos[1], 2)
+                );
+                
                 if (distance < (editorMoveRange / Math.sqrt(view.zoom))) {
                     tempIsHintDrawn = true;
                     redraw();
+                    
+                    // Draw hint line
                     ctx.strokeStyle = editorStyle.hintColor;
                     ctx.lineWidth = editorStyle.connectionHighlightWidth;
                     ctx.beginPath();
@@ -373,7 +385,7 @@ function handleMouseMove(event) {
 
 // Handle double click for completing polygons
 function handleDoubleClick(event) {
-    if (editorMode == "polygon" && isDrawingPolygon && polygonPoints.length >= 3) {
+    if (editorMode === "polygon" && isDrawingPolygon && polygonPoints.length >= 3) {
         console.log("Completing polygon with", polygonPoints.length, "points");
         isDrawingPolygon = false;
         showAreaPropertiesDialog(function(properties) {
@@ -393,13 +405,29 @@ function handleDoubleClick(event) {
             console.log("Created new area:", area);
             polygonPoints = [];
             redraw();
+            
+            // Refresh suggestions as area names might be used
+            populateSuggestions();
         });
     }
 }
 
 // Handle scroll events for zooming
 function handleScroll(event) {
-    view.zoom = view.zoom * Math.pow(Math.E, -1 * event.deltaY / 400);
+    // Calculate zoom center based on mouse position
+    const mouseX = event.pageX;
+    const mouseY = event.pageY;
+    const worldPosBeforeZoom = canvasPosToPos(mouseX, mouseY);
+    
+    // Apply zoom
+    const zoomFactor = Math.pow(Math.E, -event.deltaY / 400);
+    view.zoom = Math.min(Math.max(view.zoom * zoomFactor, 0.2), 5); // Limit zoom range
+    
+    // Adjust position to keep mouse over same world point
+    const worldPosAfterZoom = canvasPosToPos(mouseX, mouseY);
+    view.x += (worldPosAfterZoom[0] - worldPosBeforeZoom[0]);
+    view.y += (worldPosAfterZoom[1] - worldPosBeforeZoom[1]);
+    
     redraw();
 }
 
@@ -445,13 +473,9 @@ function showAreaPropertiesDialog(callback) {
         <div>
             <label for="area-type">Type:</label>
             <select id="area-type">
-                <option value="classroom">Classroom</option>
-                <option value="office">Office</option>
-                <option value="hallway">Hallway</option>
-                <option value="elevator">Elevator</option>
-                <option value="stairs">Stairs</option>
-                <option value="entrance">Entrance</option>
-                <option value="restroom">Restroom</option>
+                ${Object.keys(areaTypes).map(type => 
+                    `<option value="${type}">${areaTypes[type].name}</option>`
+                ).join('')}
             </select>
         </div>
         <div>
@@ -486,19 +510,6 @@ function showAreaPropertiesDialog(callback) {
     });
 }
 
-// Find an area that contains a point
-function findAreaAtPoint(x, y, layer = view.layer) {
-    if (!areas[layer]) return null;
-    
-    for (const area of areas[layer]) {
-        if (isPointInPolygon(x, y, area.points)) {
-            return area;
-        }
-    }
-    
-    return null;
-}
-
 // Show area properties panel
 function showAreaPanel(area) {
     let areaPanel = document.getElementById("areaPanel");
@@ -511,6 +522,8 @@ function showAreaPanel(area) {
         areaPanel.style.position = "absolute";
         areaPanel.style.top = "20px";
         areaPanel.style.right = "20px";
+        areaPanel.style.width = "300px";
+        areaPanel.style.height = "auto";
         document.body.appendChild(areaPanel);
     }
     
@@ -519,33 +532,41 @@ function showAreaPanel(area) {
     
     // Update panel contents
     areaPanel.innerHTML = `
-        <p>Area Properties</p>
-        <hr>
-        <label for="areaName">Name:</label>
-        <input type="text" id="areaName" value="${area.name || ''}">
-        <hr>
-        <label for="areaType">Type:</label>
-        <select id="areaType">
-            ${Object.keys(areaTypes).map(type => 
-                `<option value="${type}" ${area.type === type ? 'selected' : ''}>${areaTypes[type].name}</option>`
-            ).join('')}
-        </select>
-        <hr>
-        <p>Associated Nodes:</p>
-        <div id="areaNodes">
-            ${area.nodes && area.nodes.length > 0 ? 
-                area.nodes.map(nodeId => {
-                    const node = nodeGraph[area.layer][nodeId];
-                    return node ? 
-                        `<div>Node ${nodeId}${node.name ? ': ' + node.name : ''}</div>` : 
-                        '';
-                }).join('') : 
-                '<div>No nodes associated with this area</div>'
-            }
+        <h3 class="font-bold mb-2">Area Properties</h3>
+        <div class="mb-2">
+            <label class="block text-xs mb-1">Name:</label>
+            <input type="text" id="areaName" class="w-full p-1 text-sm border rounded" value="${area.name || ''}">
         </div>
-        <hr>
-        <button id="generateNode">Generate Center Node</button>
-        <button id="updateArea">Update</button>
+        <div class="mb-2">
+            <label class="block text-xs mb-1">Type:</label>
+            <select id="areaType" class="w-full p-1 text-sm border rounded">
+                ${Object.keys(areaTypes).map(type => 
+                    `<option value="${type}" ${area.type === type ? 'selected' : ''}>${areaTypes[type].name}</option>`
+                ).join('')}
+            </select>
+        </div>
+        <div class="mb-2">
+            <label class="block text-xs mb-1">Associated Nodes:</label>
+            <div id="areaNodes" class="text-xs bg-gray-50 p-1 rounded max-h-24 overflow-y-auto">
+                ${area.nodes && area.nodes.length > 0 ? 
+                    area.nodes.map(nodeId => {
+                        const node = nodeGraph[area.layer][nodeId];
+                        return node ? 
+                            `<div class="py-0.5">${nodeId}: ${node.name || 'Unnamed node'}</div>` : 
+                            '';
+                    }).join('') : 
+                    '<div class="py-0.5">No nodes associated with this area</div>'
+                }
+            </div>
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button id="generateAreaNode" class="px-2 py-1 bg-blue-500 text-white text-xs rounded">
+                Generate Node
+            </button>
+            <button id="updateArea" class="px-2 py-1 bg-blue-500 text-white text-xs rounded">
+                Update
+            </button>
+        </div>
     `;
     
     // Add event listeners
@@ -558,7 +579,7 @@ function showAreaPanel(area) {
         redraw();
     });
     
-    document.getElementById("generateNode").addEventListener("click", function() {
+    document.getElementById("generateAreaNode").addEventListener("click", function() {
         generateNodesForArea(area);
         showAreaPanel(area); // Refresh panel
         redraw();
@@ -567,6 +588,10 @@ function showAreaPanel(area) {
     document.getElementById("updateArea").addEventListener("click", function() {
         area.name = document.getElementById("areaName").value;
         area.type = document.getElementById("areaType").value;
+        
+        // Update suggestions as area name might be used
+        populateSuggestions();
+        
         redraw();
     });
 }
@@ -576,17 +601,20 @@ function createNode(layer, x, y, name = "", type = "regular") {
     console.log("Creating new node at:", x, y, "on layer:", layer);
     
     let id;
-    if (loadedLayers.includes(layer)) {
-        id = nodeGraph[layer].length;
+    if (nodeGraph[layer]) {
+        // Find the next available ID
+        id = 0;
+        while (nodeGraph[layer][id] !== undefined) {
+            id++;
+        }
     } else {
         id = 0;
-        loadedLayers.push(layer);
         nodeGraph[layer] = [];
         namedNodes[layer] = [];
         areas[layer] = [];
-        layerData[layer] = { imgScale: 1, mapImage: "outside.png" }; // Set a default map image
+        layerData[layer] = { imgScale: 1, mapImage: `${layer}.png` }; // Set a default map image
         
-        // Add to layer select in UI
+        // Add to layer select
         addLayerToSelect(layer);
     }
     
@@ -607,16 +635,13 @@ function createNode(layer, x, y, name = "", type = "regular") {
             id: id,
             name: name
         });
+        
+        // Update suggestions
+        populateSuggestions();
     }
     
     nodeGraph[layer][id] = node;
     console.log("Node created:", node);
-    
-    // If in edit mode, show the node panel
-    if (editorMode === "edit") {
-        editorSelectedNode = node;
-        showNodePanel(node);
-    }
     
     return node;
 }
@@ -624,27 +649,31 @@ function createNode(layer, x, y, name = "", type = "regular") {
 // Connect two nodes
 function connectNodes(node1, node2, flags = []) {
     if (node1 == node2) {
-        return;     // cannot connect a node to itself
+        return; // Cannot connect a node to itself
     }
     
-    if (node1.connections.some((x) => x.id == node2.id) || node2.connections.some((x) => x.id == node1.id)) {
-        return;     // already connected
+    if (node1.connections.some(c => c.id == node2.id) || node2.connections.some(c => c.id == node1.id)) {
+        return; // Already connected
     }
     
     if (node1.layer == node2.layer) {
+        // Same layer connection - store distance
         let distance = Math.sqrt(Math.pow(node1.x - node2.x, 2) + Math.pow(node1.y - node2.y, 2));
         node1.connections.push({ id: node2.id, distance: distance, flags: [...flags] });
         node2.connections.push({ id: node1.id, distance: distance, flags: [...flags] });
     } else {
+        // Layer change connection - store target layer
         node1.connections.push({ id: node2.id, layer: node2.layer, flags: ["layerChange", ...flags] });
         node2.connections.push({ id: node1.id, layer: node1.layer, flags: ["layerChange", ...flags] });
     }
+    
+    console.log(`Connected: Node ${node1.id} (${node1.layer}) to Node ${node2.id} (${node2.layer})`);
 }
 
 // Disconnect two nodes
 function disconnectNodes(node1, node2) {
     if (node1 == node2) {
-        return;     // cannot disconnect a node from itself
+        return; // Cannot disconnect a node from itself
     }
     
     let node1Index = node1.connections.findIndex(c => c.id === node2.id);
@@ -653,6 +682,7 @@ function disconnectNodes(node1, node2) {
     if (node1Index != -1 && node2Index != -1) {
         node1.connections.splice(node1Index, 1);
         node2.connections.splice(node2Index, 1);
+        console.log(`Disconnected: Node ${node1.id} from Node ${node2.id}`);
     }
 }
 
@@ -680,98 +710,65 @@ function moveNode(node, x, y) {
     }
 }
 
-// Quantize node positions to save space
-function quantizeNodePositions(layer = view.layer) {
-    for (let i = 0; i < nodeGraph[layer].length; i++) {
-        let node = nodeGraph[layer][i];
-        if (!node) {
-            continue;
-        }
-        moveNode(node, Math.round(node.x), Math.round(node.y));
-    }
-    redraw();
-}
-
 // Initialize editor
 function initEditor() {
-    document.addEventListener("dblclick", handleDoubleClick);
+    // Register event handlers (moved to main.js setupEventHandlers())
+    console.log("Editor initialized");
     
-    // Add editor mode buttons if they don't exist in the HTML
-    if (editorAllowed && !document.getElementById("editorButtons")) {
-        const buttonContainer = document.createElement("div");
-        buttonContainer.id = "editorButtons";
-        buttonContainer.className = "editor-buttons";
-        buttonContainer.innerHTML = `
-            <button data-mode="add">Add Node</button>
-            <button data-mode="polygon">Add Area</button>
-            <button data-mode="move">Move</button>
-            <button data-mode="edit">Edit</button>
-            <button data-mode="connect">Connect</button>
-            <button data-mode="area">Select Area</button>
-        `;
-        document.body.appendChild(buttonContainer);
-        
-        // Add event listeners for buttons
-        const buttons = buttonContainer.querySelectorAll("button");
-        buttons.forEach(button => {
-            button.addEventListener("click", function() {
-                const mode = this.getAttribute("data-mode");
-                
-                // Simulate key press to activate the mode
-                const keyMap = {
-                    "add": "a",
-                    "polygon": "p", 
-                    "move": "m",
-                    "edit": "e",
-                    "connect": "c",
-                    "area": "r"
-                };
-                
-                if (keyMap[mode]) {
-                    handleKeyPress({ key: keyMap[mode] });
-                    
-                    // Highlight the active button
-                    buttons.forEach(btn => btn.classList.remove("active"));
-                    this.classList.add("active");
-                }
-            });
-        });
-    }
+    // Make sure draw nodes is enabled by default
+    drawNodes = true;
     
-    // Add zoom controls if they don't exist
-    if (!document.getElementById("mapControls")) {
-        const mapControls = document.createElement("div");
-        mapControls.id = "mapControls";
-        mapControls.className = "map-controls";
-        mapControls.innerHTML = `
-            <button id="zoomIn" class="map-control-btn">+</button>
-            <button id="zoomOut" class="map-control-btn">−</button>
-        `;
-        document.body.appendChild(mapControls);
-        
-        // Add event listeners
-        document.getElementById("zoomIn").addEventListener("click", function() {
-            view.zoom = Math.min(view.zoom * 1.2, 5);
-            redraw();
-        });
-        
-        document.getElementById("zoomOut").addEventListener("click", function() {
-            view.zoom = Math.max(view.zoom / 1.2, 0.2);
-            redraw();
-        });
-    }
+    // Initialize the editor mode to none
+    setEditorMode("none");
 }
 
-// *** FOR DEBUGGING PURPOSES ONLY ***
-function debugMousePosition(event, mode) {
-    const canvasPos = { x: event.pageX, y: event.pageY };
-    const worldPos = canvasPosToPos(event.pageX, event.pageY);
+// Auto-connect area nodes
+function autoConnectAreaNodes() {
+    if (!areas[view.layer]) return;
     
-    console.log(`Mouse Position (${mode}):`, {
-        canvas: canvasPos,
-        world: worldPos,
-        view: { x: view.x, y: view.y, zoom: view.zoom, layer: view.layer }
+    const maxDistance = 100; // Maximum distance for auto-connection
+    
+    // Get all nodes from areas
+    const areaNodes = [];
+    areas[view.layer].forEach(area => {
+        if (area.nodes) {
+            area.nodes.forEach(nodeId => {
+                const node = nodeGraph[view.layer][nodeId];
+                if (node) {
+                    areaNodes.push({ 
+                        node, 
+                        areaId: area.id, 
+                        areaType: area.type 
+                    });
+                }
+            });
+        }
     });
     
-    return worldPos;
+    // Connect nodes if they are close and not already connected
+    let connectionsAdded = 0;
+    for (let i = 0; i < areaNodes.length; i++) {
+        for (let j = i + 1; j < areaNodes.length; j++) {
+            const node1 = areaNodes[i].node;
+            const node2 = areaNodes[j].node;
+            
+            // Skip if they're in the same area
+            if (areaNodes[i].areaId === areaNodes[j].areaId) continue;
+            
+            // Calculate distance
+            const dx = node1.x - node2.x;
+            const dy = node1.y - node2.y;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            // Connect if close enough and not already connected
+            if (distance <= maxDistance && 
+                !node1.connections.some(c => c.id === node2.id) &&
+                !node2.connections.some(c => c.id === node1.id)) {
+                connectNodes(node1, node2);
+                connectionsAdded++;
+            }
+        }
+    }
+    
+    console.log(`Auto-connected ${connectionsAdded} node pairs`);
 }
