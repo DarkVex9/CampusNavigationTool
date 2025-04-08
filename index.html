@@ -37,6 +37,18 @@
 			</tr>
 		</table>
 		<button id="go_button">Go</button>
+		
+		<!-- Accessibility options -->
+		<div class="accessibility-options">
+			<div class="option">
+				<input type="checkbox" id="avoidStairs" name="avoidStairs">
+				<label for="avoidStairs">Stairs</label>
+			</div>
+			<div class="option">
+				<input type="checkbox" id="avoidElevators" name="avoidElevators">
+				<label for="avoidElevators">Elevator</label>
+			</div>
+		</div>
 	</span>
 	<br>
 	<span id="editorTools" style="display:none;">
@@ -57,27 +69,35 @@
 			<p>[Backspace] Delete selected node</p>
 			<p>[Delete] Delete selected node</p>
 		</span>
-		<span id="nodePanel" class="ui_panel" style="position:absolute;top:0px;right:0px">
-			<p>Node Metadata</p>
-			<hr>
-			<label for="nodeName">Room Name</label>
-			<input type="text" id="nodeName">
-			<hr>
-			<p>Flags:</p>
-			<input type="checkbox" id="isStairs">
-			<label for="isStairs">Stairs</label>
-			<br>
-			<input type="checkbox" id="isElevator">
-			<label for="isElevator">Elevator</label>
-			<hr>
-			<p>Connections:</p>
-			<div id="nodeConnections">
-			</div>
-			<hr>
-			<button id="addLayerChangeConnection">Add Layer Change Connection</button>
-		</span>
+	</span>
+	
+	<!-- Node metadata panel -->
+	<span id="nodePanel" class="ui_panel" style="display:none; position:absolute; top:0px; right:0px">
+		<p>Node Metadata</p>
+		<hr>
+		<label for="nodeName">Room Name</label>
+		<input type="text" id="nodeName">
+		<hr>
+		<p>Flags:</p>
+		<input type="checkbox" id="isStairs">
+		<label for="isStairs">Stairs</label>
+		<br>
+		<input type="checkbox" id="isElevator">
+		<label for="isElevator">Elevator</label>
+		<hr>
+		<p>Connections:</p>
+		<div id="nodeConnections">
+		</div>
+		<hr>
+		<button id="addLayerChangeConnection">Add Layer Change Connection</button>
 	</span>
 
-	<script src="core.js"></script>
+	<!-- Load modular JavaScript files -->
+	<script src="js/utils.js"></script>
+	<script src="js/data.js"></script>
+	<script src="js/pathfinding.js"></script>
+	<script src="js/ui.js"></script>
+	<script src="js/editor.js"></script>
+	<script src="js/main.js"></script>
 </body>
 </html>
