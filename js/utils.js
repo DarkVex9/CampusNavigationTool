@@ -63,3 +63,21 @@ class PriorityQueue {
         return this.elementSet.has(getNodeKey(element));
     }
 }
+
+function dumpLayerInfo() {
+    console.log("===== Layer Information =====");
+    console.log("Current view layer:", view.layer);
+    console.log("Loaded layers:", loadedLayers);
+    
+    for (const layer of loadedLayers) {
+        const nodeCount = nodeGraph[layer] ? nodeGraph[layer].filter(n => n !== null).length : 0;
+        const namedNodeCount = namedNodes[layer] ? namedNodes[layer].length : 0;
+        
+        console.log(`Layer: ${layer}`);
+        console.log(`  Nodes: ${nodeCount}`);
+        console.log(`  Named Nodes: ${namedNodeCount}`);
+        console.log(`  Map Image: ${layerData[layer] ? layerData[layer].mapImage : 'undefined'}`);
+    }
+    
+    console.log("=============================");
+}

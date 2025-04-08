@@ -150,3 +150,58 @@ function getUserPreferences() {
         avoidElevators: document.getElementById('avoidElevators').checked
     };
 }
+
+// Add this debug function to data.js 
+function debugMapLoading() {
+    console.log("Current view layer:", view.layer);
+    console.log("Loaded layers:", loadedLayers);
+    console.log("Layer data:", layerData);
+    
+    if (view.layer && layerData[view.layer]) {
+        console.log("Current map image path:", "map_images/" + layerData[view.layer].mapImage);
+        
+        // Check if the image file exists
+        const img = new Image();
+        img.onload = function() {
+            console.log("Map image loaded successfully");
+        };
+        img.onerror = function() {
+            console.error("Failed to load map image:", "map_images/" + layerData[view.layer].mapImage);
+            console.log("Please ensure the image file exists and the path is correct");
+        };
+        img.src = "map_images/" + layerData[view.layer].mapImage;
+    } else {
+        console.error("Invalid layer or missing layer data");
+    }
+}
+
+// Add this to main.js after initializeTestData()
+function checkMapSetup() {
+    // Ensure view.layer is set
+    if (!view.layer && loadedLayers.length > 0) {
+        view.layer = loadedLayers[0];
+    }
+    
+    // Log debug info
+    debugMapLoading();
+    
+    // Force redraw
+    redraw();
+}
+
+// Update the init function in main.js
+function init() {
+    console.log("Initializing Navigation Application");
+    
+    // Initialize UI
+    initUI();
+    
+    // Load test data
+    initializeTestData();
+    
+    // Check map setup
+    checkMapSetup();
+    
+    // Initial render
+    redraw();
+}

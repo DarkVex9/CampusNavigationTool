@@ -55,7 +55,10 @@ function handleKeyPress(event) {
                 
                 // Show node panel if a node is already selected
                 if (editorSelectedNode) {
+                    console.log("Showing node panel for selected node");
                     showNodePanel(editorSelectedNode);
+                } else {
+                    console.log("No node selected yet");
                 }
             }
             break;
@@ -111,43 +114,64 @@ function handleKeyPress(event) {
 
 // Handle mouse down events
 function handleMouseDown(event) {
-    console.log("Mouse Down");
+    console.log("Mouse Down - Button:", event.button, "Target:", event.target.tagName);
+    
     if (event.button != 0) {
         return;     // don't need to do anything if it isn't a primary (left) click
     }
     
-    if (event.target == canvas || event.target == document.body) {
+    if (event.target == canvas || event.target == document.body || event.target.tagName === "IMG") {
         if (!editorMode || editorMode == "none") {
+            console.log("Starting drag (pan view)");
             isDragging = true;
         } else if (editorMode == "move" || editorMode == "edit" || editorMode == "connect") {
             isDragging = true;
-            editorSelectedNode = findNearestNode(...canvasPosToPos(event.pageX, event.pageY));
+            const worldPos = debugMousePosition(event, "select node");
+            
+            const nearestNode = findNearestNode(...worldPos);
+            console.log("Nearest node:", nearestNode);
+            
+            if (!nearestNode) {
+                console.warn("No nodes found in the current layer");
+                return;
+            }
+            
+            editorSelectedNode = nearestNode;
             
             if (editorMode == "move") {
-                let cursorPos = canvasPosToPos(event.pageX, event.pageY);
-                let distance = Math.sqrt(Math.pow(editorSelectedNode.x - cursorPos[0], 2) + Math.pow(editorSelectedNode.y - cursorPos[1], 2));
+                let distance = Math.sqrt(Math.pow(editorSelectedNode.x - worldPos[0], 2) + 
+                                        Math.pow(editorSelectedNode.y - worldPos[1], 2));
+                console.log("Distance to nearest node:", distance, "Max range:", editorMoveRange / Math.sqrt(view.zoom));
+                
                 if (distance > (editorMoveRange / Math.sqrt(view.zoom))) {
+                    console.log("Node too far, deselecting");
                     editorSelectedNode = null;
                     return;     // nearest node is outside max move range
                 }
             }
             
-            console.log("Selected Node", editorSelectedNode);
+            console.log("Selected Node:", editorSelectedNode);
             
             // Show node panel in edit mode
             if (editorMode == "edit") {
+                console.log("Edit mode - showing node panel");
                 showNodePanel(editorSelectedNode);
             }
             
             redraw();
-            console.log("Selected Node (id:" + editorSelectedNode.id + ",x:" + editorSelectedNode.x + ",y:" + editorSelectedNode.y + ")");
         } else if (editorMode == "add") {
-            editorSelectedNode = createNode(view.layer, ...canvasPosToPos(event.pageX, event.pageY));
+            const worldPos = debugMousePosition(event, "add node");
+            console.log("Adding node at world position:", worldPos);
+            
+            editorSelectedNode = createNode(view.layer, ...worldPos);
+            console.log("Node added:", editorSelectedNode);
+            
             redraw();
         }
+    } else {
+        console.log("Click was on a UI element, not handling in editor");
     }
 }
-
 // Handle mouse up events
 function handleMouseUp(event) {
     if (event.button != 0) {
@@ -227,6 +251,8 @@ function handleScroll(event) {
 
 // Create a new node
 function createNode(layer, x, y, name = "", type = "regular") {
+    console.log("Creating new node at:", x, y, "on layer:", layer);
+    
     let id;
     if (loadedLayers.includes(layer)) {
         id = nodeGraph[layer].length;
@@ -235,18 +261,35 @@ function createNode(layer, x, y, name = "", type = "regular") {
         loadedLayers.push(layer);
         nodeGraph[layer] = [];
         namedNodes[layer] = [];
-        layerData[layer] = { imgScale: 1 };
+        layerData[layer] = { imgScale: 1, mapImage: "outside.png" }; // Set a default map image
         
         // Add to layer select in UI
         addLayerToSelect(layer);
     }
     
-    let node = { id: id, x: x, y: y, layer: layer, connections: [], type: type };
+    let node = { 
+        id: id, 
+        x: x, 
+        y: y, 
+        layer: layer, 
+        connections: [], 
+        type: type,
+        flags: [] // Initialize flags array
+    };
+    
     if (name) {
         node.name = name;
     }
     
     nodeGraph[layer][id] = node;
+    console.log("Node created:", node);
+    
+    // If in edit mode, show the node panel
+    if (editorMode === "edit") {
+        editorSelectedNode = node;
+        showNodePanel(node);
+    }
+    
     return node;
 }
 
@@ -317,4 +360,20 @@ function quantizeNodePositions(layer = view.layer) {
         moveNode(node, Math.round(node.x), Math.round(node.y));
     }
     redraw();
+}
+
+
+// *** FOR DEBUGGING PURPOSES ONLY ***
+// PLEASE REMOVE BEFORE FINAL BUILD
+function debugMousePosition(event, mode) {
+    const canvasPos = { x: event.pageX, y: event.pageY };
+    const worldPos = canvasPosToPos(event.pageX, event.pageY);
+    
+    console.log(`Mouse Position (${mode}):`, {
+        canvas: canvasPos,
+        world: worldPos,
+        view: { x: view.x, y: view.y, zoom: view.zoom, layer: view.layer }
+    });
+    
+    return worldPos;
 }

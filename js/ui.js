@@ -211,16 +211,45 @@ function initNodePanel() {
 
 // Show the node panel when a node is selected
 function showNodePanel(node) {
-    if (!node) return;
+    if (!node) {
+        console.log("Cannot show node panel: no node provided");
+        return;
+    }
     
+    console.log("Showing node panel for node:", node);
+    
+    // Get the node panel element
+    const nodePanel = document.getElementById("nodePanel");
+    if (!nodePanel) {
+        console.error("Node panel element not found in the DOM");
+        return;
+    }
+    
+    // Ensure the panel is visible
     nodePanel.style.display = "block";
     
+    // Position the panel in the top right corner
+    nodePanel.style.position = "absolute";
+    nodePanel.style.top = "20px";
+    nodePanel.style.right = "20px";
+    
     // Set node name
-    document.getElementById("nodeName").value = node.name || "";
+    const nameInput = document.getElementById("nodeName");
+    if (nameInput) {
+        nameInput.value = node.name || "";
+    }
     
     // Set node flags
-    document.getElementById("isStairs").checked = node.flags && node.flags.includes("stairs");
-    document.getElementById("isElevator").checked = node.flags && node.flags.includes("elevator");
+    const stairsCheckbox = document.getElementById("isStairs");
+    const elevatorCheckbox = document.getElementById("isElevator");
+    
+    if (stairsCheckbox) {
+        stairsCheckbox.checked = node.flags && node.flags.includes("stairs");
+    }
+    
+    if (elevatorCheckbox) {
+        elevatorCheckbox.checked = node.flags && node.flags.includes("elevator");
+    }
     
     // Update connections list
     updateConnectionsList(node);

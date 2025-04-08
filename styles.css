@@ -125,3 +125,66 @@
 body {
 	overflow:hidden;
 }
+
+
+.accessibility-options {
+    margin-top: 10px;
+    width: 100%;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.option input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.ui_panel {
+    background-color: #00008040;
+    border-radius: 25px;
+    padding: 10px;
+    display: inline-block;
+}
+
+#nodePanel {
+    background-color: #00008040;
+    border-radius: 25px;
+    padding: 10px 15px;
+    min-width: 200px;
+    z-index: 100;
+}
+
+#nodePanel p {
+    margin: 5px 0;
+}
+
+#nodePanel hr {
+    border: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    margin: 8px 0;
+}
+
+#nodePanel input[type="text"] {
+    width: 90%;
+    margin: 5px 0;
+}
+
+#nodePanel input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+#nodeConnections {
+    margin: 8px 0;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+#addLayerChangeConnection {
+    width: 100%;
+    margin-top: 8px;
+    padding: 4px;
+    cursor: pointer;
+}
