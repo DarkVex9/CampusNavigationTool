@@ -1,103 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>TXST Navigation</title>
-	<link rel="stylesheet" href="styles.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TXST Navigation</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body style="user-select:none;">
-	<div id="mapImgContainer">
-		<img id="mainMapImg" src="map_images/outside.png" class="fixed_position" style="z-index:-2; object-fit:cover;transform-origin: 0% 0%;">
-	</div>
-	<canvas id="overlay" class="fixed_position" style="z-index:-1;"></canvas>
-	
-	<span id="routePanel" class="ui_panel">
-		<table>
-			<tr>
-				<td>
-					<p>TXST Campus Navigation</p>
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<label for="origin" align="right">From:</label>
-				</td>
-				<td>
-					<input type="text" id="origin">
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<label for="destination" align="right">To:</label>
-				</td>
-				<td>
-					<input type="text" id="destination">
-				</td>
-			</tr>
-		</table>
-		<button id="go_button">Go</button>
-		
-		<!-- Accessibility options -->
-		<div class="accessibility-options">
-			<div class="option">
-				<input type="checkbox" id="avoidStairs" name="avoidStairs">
-				<label for="avoidStairs">Stairs</label>
-			</div>
-			<div class="option">
-				<input type="checkbox" id="avoidElevators" name="avoidElevators">
-				<label for="avoidElevators">Elevator</label>
-			</div>
-		</div>
-	</span>
-	<br>
-	<span id="editorTools" style="display:none;">
-		<select id="layerSelect">
-		</select>
-		<br>
-		<span style="pointer-events: none;">
-			<p id="editorMode">Editor Mode: None</p>
-			<b>== Editor Modes ==</b>
-			<p>[A] Add</p>
-			<p>[M] Move</p>
-			<p>[E] Edit</p>
-			<p>[C] Connect</p>
-			<p>[Esc] None</p>
-			<b>== Other Hotkeys ==</b>
-			<p>[D] Toggle drawing nodes</p>
-			<p>[P] Print layer to console</p>
-			<p>[Backspace] Delete selected node</p>
-			<p>[Delete] Delete selected node</p>
-		</span>
-	</span>
-	
-	<!-- Node metadata panel -->
-	<span id="nodePanel" class="ui_panel" style="display:none; position:absolute; top:0px; right:0px">
-		<p>Node Metadata</p>
-		<hr>
-		<label for="nodeName">Room Name</label>
-		<input type="text" id="nodeName">
-		<hr>
-		<p>Flags:</p>
-		<input type="checkbox" id="isStairs">
-		<label for="isStairs">Stairs</label>
-		<br>
-		<input type="checkbox" id="isElevator">
-		<label for="isElevator">Elevator</label>
-		<hr>
-		<p>Connections:</p>
-		<div id="nodeConnections">
-		</div>
-		<hr>
-		<button id="addLayerChangeConnection">Add Layer Change Connection</button>
-	</span>
+    <div id="mapBackground"
+        class="fixed_position" style="z-index:-2; background-color: #f0f0f0; width: 100%; height: 100%;"></div>
+    </div>
+    <canvas id="overlay" class="fixed_position" style="z-index:-1;"></canvas>
+    
+    <span id="routePanel" class="ui_panel">
+        <table>
+            <tr>
+                <td>
+                    <p>TXST Campus Navigation</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="origin" align="right">From:</label>
+                </td>
+                <td>
+                    <input type="text" id="origin" list="originSuggestions">
+                    <datalist id="originSuggestions"></datalist>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="destination" align="right">To:</label>
+                </td>
+                <td>
+                    <input type="text" id="destination" list="destinationSuggestions">
+                    <datalist id="destinationSuggestions"></datalist>
+                </td>
+            </tr>
+        </table>
+        <button id="go_button">Go</button>
+        
+        <!-- Accessibility options -->
+        <div class="accessibility-options">
+            <div class="option">
+                <input type="checkbox" id="avoidStairs" name="avoidStairs">
+                <label for="avoidStairs">Avoid Stairs</label>
+            </div>
+            <div class="option">
+                <input type="checkbox" id="avoidElevators" name="avoidElevators">
+                <label for="avoidElevators">Avoid Elevators</label>
+            </div>
+        </div>
+    </span>
+    
+    <!-- Instructions panel (for navigation guidance) -->
+    <div id="instructionPanel" class="instruction-panel" style="display:none;">
+        <!-- Content will be dynamically populated -->
+    </div>
+    
+    <br>
+    <span id="editorTools" style="display:none;">
+        <select id="layerSelect">
+            <!-- Options will be dynamically populated -->
+        </select>
+        <br>
+        <span style="pointer-events: none;">
+            <p id="editorMode">Editor Mode: None</p>
+            <b>== Editor Modes ==</b>
+            <p>[A] Add Node</p>
+            <p>[P] Add Polygon Area</p>
+            <p>[M] Move</p>
+            <p>[E] Edit</p>
+            <p>[C] Connect</p>
+            <p>[R] Select Area</p>
+            <p>[Esc] None/Cancel</p>
+            <b>== Other Hotkeys ==</b>
+            <p>[D] Toggle drawing nodes</p>
+            <p>[Ctrl+P] Print layer to console</p>
+            <p>[Backspace/Delete] Delete selected node/area</p>
+            <p>[Ctrl+Z] Auto-connect nearby area nodes</p>
+        </span>
+        
+        <!-- Editor button shortcuts -->
+        <div id="editorButtons" class="editor-buttons">
+            <!-- Will be populated by initEditor() -->
+        </div>
+    </span>
+    
+    <!-- Node metadata panel -->
+    <span id="nodePanel" class="ui_panel" style="display:none; position:absolute; top:0px; right:0px">
+        <p>Node Metadata</p>
+        <hr>
+        <label for="nodeName">Room Name</label>
+        <input type="text" id="nodeName">
+        <hr>
+        <p>Flags:</p>
+        <input type="checkbox" id="isStairs">
+        <label for="isStairs">Stairs</label>
+        <br>
+        <input type="checkbox" id="isElevator">
+        <label for="isElevator">Elevator</label>
+        <hr>
+        <p>Connections:</p>
+        <div id="nodeConnections">
+            <!-- Will be populated dynamically -->
+        </div>
+        <hr>
+        <button id="addLayerChangeConnection">Add Layer Change Connection</button>
+    </span>
 
-	<!-- Load modular JavaScript files -->
-	<script src="js/utils.js"></script>
-	<script src="js/data.js"></script>
-	<script src="js/pathfinding.js"></script>
-	<script src="js/ui.js"></script>
-	<script src="js/editor.js"></script>
-	<script src="js/main.js"></script>
+    <!-- Area metadata panel -->
+    <span id="areaPanel" class="ui_panel" style="display:none; position:absolute; top:0px; right:0px">
+        <p>Area Properties</p>
+        <hr>
+        <label for="areaName">Name:</label>
+        <input type="text" id="areaName">
+        <hr>
+        <label for="areaType">Type:</label>
+        <select id="areaType">
+            <!-- Will be populated dynamically -->
+        </select>
+        <hr>
+        <p>Associated Nodes:</p>
+        <div id="areaNodes">
+            <!-- Will be populated dynamically -->
+        </div>
+        <hr>
+        <button id="generateNode">Generate Center Node</button>
+        <button id="updateArea">Update</button>
+    </span>
+
+    <!-- Legend panel -->
+    <div id="legendPanel" class="legend-panel">
+        <div class="legend-title">Map Legend</div>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #B3E5FC;"></div>
+            <span>Classroom</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #C8E6C9;"></div>
+            <span>Office</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #F8BBD0;"></div>
+            <span>Elevator</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #FFE0B2;"></div>
+            <span>Stairs</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #F5F5F5;"></div>
+            <span>Hallway</span>
+        </div>
+        <div class="legend-item">
+            <div class="color-box" style="background-color: #BBDEFB;"></div>
+            <span>Entrance</span>
+        </div>
+    </div>
+
+    <!-- Map controls -->
+    <div id="mapControls" class="map-controls">
+        <button id="zoomIn" class="map-control-btn">+</button>
+        <button id="zoomOut" class="map-control-btn">−</button>
+    </div>
+
+    <!-- Load modular JavaScript files -->
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/pathfinding.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>

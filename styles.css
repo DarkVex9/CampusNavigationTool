@@ -143,48 +143,429 @@ body {
 }
 
 .ui_panel {
-    background-color: #00008040;
+    background-color: rgba(255, 255, 255, 0.8);
     border-radius: 25px;
     padding: 10px;
     display: inline-block;
 }
 
-#nodePanel {
-    background-color: #00008040;
-    border-radius: 25px;
-    padding: 10px 15px;
+#nodePanel, #areaPanel {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 15px;
     min-width: 200px;
     z-index: 100;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    max-width: 300px;
 }
 
-#nodePanel p {
+#nodePanel p, #areaPanel p {
     margin: 5px 0;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
 }
 
-#nodePanel hr {
+#nodePanel hr, #areaPanel hr {
     border: none;
     border-top: 1px solid rgba(0, 0, 0, 0.2);
     margin: 8px 0;
 }
 
-#nodePanel input[type="text"] {
+#nodePanel input[type="text"], #areaPanel input[type="text"] {
     width: 90%;
     margin: 5px 0;
 }
 
-#nodePanel input[type="checkbox"] {
+#nodePanel input[type="checkbox"], #areaPanel input[type="checkbox"] {
     margin-right: 5px;
 }
 
-#nodeConnections {
+#nodeConnections, #areaNodes {
     margin: 8px 0;
     max-height: 150px;
     overflow-y: auto;
 }
 
-#addLayerChangeConnection {
+#addLayerChangeConnection, #generateNode, #updateArea {
     width: 100%;
     margin-top: 8px;
     padding: 4px;
     cursor: pointer;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#addLayerChangeConnection:hover, #generateNode:hover, #updateArea:hover {
+    background: #0056b3;
+}
+
+/* Area dialog styling */
+.area-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    min-width: 300px;
+}
+
+.area-dialog h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.area-dialog div {
+    margin-bottom: 10px;
+}
+
+.area-dialog label {
+    display: inline-block;
+    width: 80px;
+    font-weight: bold;
+}
+
+.area-dialog input[type="text"],
+.area-dialog select {
+    width: 180px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.area-dialog .buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.area-dialog button {
+    padding: 5px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.area-dialog button#cancel-area {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.area-dialog button#save-area {
+    background: #007bff;
+    color: white;
+}
+
+/* Instruction panel */
+.instruction-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    max-width: 400px;
+    padding: 15px;
+    background: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    z-index: 1000;
+}
+
+.instruction-icon {
+    width: 40px;
+    height: 40px;
+    background: #007bff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: white;
+    font-size: 20px;
+}
+
+.instruction-text {
+    flex: 1;
+}
+
+.instruction-main {
+    font-weight: bold;
+    margin: 0 0 5px 0;
+}
+
+.instruction-detail {
+    color: #666;
+    margin: 0;
+    font-size: 14px;
+}
+
+.instruction-step {
+    background: #f0f0f0;
+    border-radius: 15px;
+    padding: 3px 8px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+/* Editor buttons */
+.editor-buttons {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100;
+}
+
+.editor-buttons button {
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.editor-buttons button:hover {
+    background: #f0f0f0;
+}
+
+.editor-buttons button.active {
+    background: #007bff;
+    color: white;
+    border-color: #0056b3;
+}
+
+/* Layer selector */
+.layer-selector {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+/* Connection tables */
+.connections-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.connections-table th, .connections-table td {
+    border: 1px solid #ddd;
+    padding: 4px 8px;
+    text-align: left;
+}
+
+.connections-table th {
+    background: #f5f5f5;
+}
+
+/* Legend panel */
+.legend-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-size: 12px;
+    z-index: 100;
+}
+
+.legend-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 3px 0;
+}
+
+.color-box {
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+    border: 1px solid #ccc;
+}
+
+/* Map controls */
+.map-controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 100;
+}
+
+.map-control-btn {
+    width: 30px;
+    height: 30px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.map-control-btn:hover {
+    background: #f0f0f0;
+}
+
+/* Layer change modal */
+.layer-change-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1100;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 100%;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.modal-content div {
+    margin-bottom: 12px;
+}
+
+.modal-content label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.modal-content select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.modal-buttons button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#confirmLayerChange {
+    background: #007bff;
+    color: white;
+}
+
+#cancelLayerChange {
+    background: #f1f1f1;
+    color: #333;
+}
+
+/* Responsive adjustments for small screens */
+@media (max-width: 768px) {
+    .ui_panel {
+        max-width: 250px;
+    }
+    
+    .editor-buttons {
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 200px;
+    }
+    
+    .editor-buttons button {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+    
+    .instruction-panel {
+        max-width: 300px;
+    }
+}
+
+/* Direction indicators for path */
+.path-arrow {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #ff0000;
+    border-radius: 50%;
+    z-index: 5;
+}
+
+.path-marker {
+    position: absolute;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 12px;
+}
+
+.path-marker.start {
+    background: #00aa00;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+.path-marker.end {
+    background: #aa0000;
+    width: 20px;
+    height: 20px;
+    border-radius: 0;
+}
+
+.path-marker.exit {
+    background: #aaaa00;
+    width: 18px;
+    height: 18px;
+    transform: rotate(45deg);
 }

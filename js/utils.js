@@ -81,3 +81,24 @@ function dumpLayerInfo() {
     
     console.log("=============================");
 }
+
+// Helper function to get the center point of an area
+function getAreaCenter(area) {
+    if (!area || !area.points || area.points.length === 0) {
+        return null;
+    }
+    
+    const centerX = area.points.reduce((sum, p) => sum + p.x, 0) / area.points.length;
+    const centerY = area.points.reduce((sum, p) => sum + p.y, 0) / area.points.length;
+    
+    return { x: centerX, y: centerY };
+}
+
+// Calculate area of a polygon
+function calculatePolygonArea(points) {
+    let area = 0;
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+        area += (points[i].x + points[j].x) * (points[j].y - points[i].y);
+    }
+    return Math.abs(area / 2);
+}

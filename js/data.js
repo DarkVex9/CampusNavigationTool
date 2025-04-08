@@ -205,3 +205,67 @@ function init() {
     // Initial render
     redraw();
 }
+
+var areas = {};  // Each loaded layer is a property containing an array of all areas
+
+// Define a new area
+function createArea(layer, name, type, points) {
+    if (!areas[layer]) {
+        areas[layer] = [];
+    }
+    
+    const id = areas[layer].length;
+    const area = {
+        id: id,
+        name: name,
+        type: type,
+        points: points,
+        layer: layer,
+        nodes: []  // IDs of nodes associated with this area
+    };
+    
+    areas[layer].push(area);
+    return area;
+}
+
+// Associate a node with an area
+function associateNodeWithArea(node, area) {
+    area.nodes.push(node.id);
+}
+
+// Draw areas in ui.js
+function drawAreas() {
+    if (!areas[view.layer]) return;
+    
+    for (const area of areas[view.layer]) {
+        // Set fill color based on area type
+        ctx.fillStyle = getAreaColor(area.type);
+        ctx.strokeStyle = "#666";
+        ctx.lineWidth = 1;
+        
+        // Draw the polygon
+        ctx.beginPath();
+        ctx.moveTo(...posToCanvasPos(area.points[0].x, area.points[0].y));
+        
+        for (let i = 1; i < area.points.length; i++) {
+            ctx.lineTo(...posToCanvasPos(area.points[i].x, area.points[i].y));
+        }
+        
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Draw area name
+        // Calculate center point of the polygon
+        const centerX = area.points.reduce((sum, p) => sum + p.x, 0) / area.points.length;
+        const centerY = area.points.reduce((sum, p) => sum + p.y, 0) / area.points.length;
+        
+        ctx.fillStyle = "#333";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(area.name, ...posToCanvasPos(centerX, centerY));
+        
+        // Draw area icon if needed
+        drawAreaIcon(area);
+    }
+}

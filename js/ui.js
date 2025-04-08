@@ -24,7 +24,11 @@ var editorStyle = {
     connectionWidth: 3,
     connectionHighlightColor: "#EDC618",
     connectionHighlightWidth: 5,
-    hintColor: "#C9C5A9"
+    hintColor: "#C9C5A9",
+    areaStrokeColor: "#666666",
+    areaStrokeWidth: 1,
+    areaSelectedStrokeColor: "#EDC618",
+    areaSelectedStrokeWidth: 2
 };
 
 // View state
@@ -66,6 +70,11 @@ function initUI() {
     // Show editor tools if enabled
     if (editorAllowed) {
         editorContainer.style.display = "inline-block";
+        
+        // Initialize editor if the function exists
+        if (typeof initEditor === 'function') {
+            initEditor();
+        }
     }
     
     // Handle window resize
@@ -106,6 +115,15 @@ function handleGoButton() {
     }
     
     currentPath = path;
+    
+    // Generate path instructions if function exists
+    if (typeof generatePathInstructions === 'function') {
+        const instructions = generatePathInstructions(path);
+        if (typeof showPathInstructions === 'function') {
+            showPathInstructions(instructions);
+        }
+    }
+    
     redraw();
 }
 
@@ -130,6 +148,9 @@ function redraw() {
     
     updateMapImageTransform();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw areas first (underneath everything else)
+    drawAreas();
     
     // Draw current path if one exists
     if (currentPath) {
@@ -172,8 +193,59 @@ function redraw() {
         
         // Highlight selected node
         if (editorSelectedNode) {
-            drawCircle(editorSelectedNode.x, editorSelectedNode.y, editorStyle.nodeRadius, editorStyle.nodeHighlightColor);
+            drawCircle(editorSelectedNode.x, editorSelectedNode.y, editorStyle.nodeRadius + 2, editorStyle.nodeHighlightColor);
             drawCircle(editorSelectedNode.x, editorSelectedNode.y, editorStyle.nodeRadius/2, editorStyle.nodeHighlightColor);
+        }
+    }
+    
+    // Draw polygon in progress if in polygon drawing mode
+    if (typeof isDrawingPolygon !== 'undefined' && isDrawingPolygon && typeof drawPolygonInProgress === 'function') {
+        drawPolygonInProgress();
+    }
+}
+
+// Draw all areas on the current layer
+function drawAreas() {
+    if (!areas[view.layer]) return;
+    
+    for (const area of areas[view.layer]) {
+        if (!area.points || area.points.length < 3) continue;
+        
+        // Determine if this is the selected area
+        const isSelected = (typeof editorSelectedArea !== 'undefined' && editorSelectedArea && editorSelectedArea.id === area.id);
+        
+        // Set fill color based on area type
+        ctx.fillStyle = getAreaColor(area.type);
+        ctx.strokeStyle = isSelected ? editorStyle.areaSelectedStrokeColor : editorStyle.areaStrokeColor;
+        ctx.lineWidth = isSelected ? editorStyle.areaSelectedStrokeWidth : editorStyle.areaStrokeWidth;
+        
+        // Draw the polygon
+        ctx.beginPath();
+        ctx.moveTo(...posToCanvasPos(area.points[0].x, area.points[0].y));
+        
+        for (let i = 1; i < area.points.length; i++) {
+            ctx.lineTo(...posToCanvasPos(area.points[i].x, area.points[i].y));
+        }
+        
+        ctx.closePath();
+        ctx.globalAlpha = 0.7; // Make areas semi-transparent
+        ctx.fill();
+        ctx.globalAlpha = 1.0; // Reset alpha for the stroke
+        ctx.stroke();
+        
+        // Draw area name
+        // Calculate center point of the polygon
+        const centerX = area.points.reduce((sum, p) => sum + p.x, 0) / area.points.length;
+        const centerY = area.points.reduce((sum, p) => sum + p.y, 0) / area.points.length;
+        
+        ctx.fillStyle = "#333";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(area.name || `Area ${area.id}`, ...posToCanvasPos(centerX, centerY));
+        
+        // Draw area icon if the function exists
+        if (typeof drawAreaIcon === 'function') {
+            drawAreaIcon(area);
         }
     }
 }
@@ -183,7 +255,10 @@ function drawNodeWithType(node) {
     const nodeColor = node.type && nodeTypes[node.type] ? 
         nodeTypes[node.type].color : editorStyle.nodeColor;
     
-    const isHighlighted = (editorSelectedNode && editorSelectedNode.id === node.id);
+    const isHighlighted = (typeof editorSelectedNode !== 'undefined' && 
+                           editorSelectedNode && 
+                           editorSelectedNode.id === node.id);
+                           
     const color = isHighlighted ? editorStyle.nodeHighlightColor : nodeColor;
     
     // Draw circle for the node
@@ -194,6 +269,82 @@ function drawNodeWithType(node) {
         ctx.fillStyle = "#ffffff";
         ctx.font = "10px Arial";
         ctx.fillText(node.name, ...posToCanvasPos(node.x + 8, node.y));
+    }
+}
+
+// Draw an icon for a specific area type
+function drawAreaIcon(area) {
+    if (!area.type) return;
+    
+    // Skip if no special icon needed
+    if (area.type === 'classroom' || area.type === 'office' || area.type === 'hallway') {
+        return;
+    }
+    
+    // Calculate position (top-left corner)
+    const x = area.points[0].x;
+    const y = area.points[0].y;
+    const [canvasX, canvasY] = posToCanvasPos(x, y);
+    
+    // Draw icon background
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(canvasX + 12, canvasY + 12, 10, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // Draw icon based on type
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1.5;
+    
+    switch (area.type) {
+        case 'elevator':
+            // Simple elevator icon
+            ctx.beginPath();
+            ctx.rect(canvasX + 7, canvasY + 7, 10, 10);
+            ctx.moveTo(canvasX + 9, canvasY + 10);
+            ctx.lineTo(canvasX + 15, canvasY + 10);
+            ctx.moveTo(canvasX + 12, canvasY + 8);
+            ctx.lineTo(canvasX + 12, canvasY + 16);
+            ctx.stroke();
+            break;
+            
+        case 'stairs':
+            // Simple stairs icon
+            ctx.beginPath();
+            ctx.moveTo(canvasX + 7, canvasY + 17);
+            ctx.lineTo(canvasX + 7, canvasY + 14);
+            ctx.lineTo(canvasX + 10, canvasY + 14);
+            ctx.lineTo(canvasX + 10, canvasY + 11);
+            ctx.lineTo(canvasX + 13, canvasY + 11);
+            ctx.lineTo(canvasX + 13, canvasY + 8);
+            ctx.lineTo(canvasX + 17, canvasY + 8);
+            ctx.stroke();
+            break;
+            
+        case 'entrance':
+            // Simple entrance icon
+            ctx.beginPath();
+            ctx.moveTo(canvasX + 7, canvasY + 12);
+            ctx.lineTo(canvasX + 17, canvasY + 12);
+            ctx.moveTo(canvasX + 14, canvasY + 8);
+            ctx.lineTo(canvasX + 17, canvasY + 12);
+            ctx.lineTo(canvasX + 14, canvasY + 16);
+            ctx.stroke();
+            break;
+            
+        case 'restroom':
+            // Simple restroom icon
+            ctx.beginPath();
+            ctx.arc(canvasX + 10, canvasY + 9, 3, 0, 2 * Math.PI);
+            ctx.moveTo(canvasX + 10, canvasY + 12);
+            ctx.lineTo(canvasX + 10, canvasY + 15);
+            ctx.moveTo(canvasX + 7, canvasY + 13);
+            ctx.lineTo(canvasX + 13, canvasY + 13);
+            ctx.stroke();
+            break;
     }
 }
 
@@ -487,4 +638,146 @@ function showLayerChangeUI() {
     document.getElementById("cancelLayerChange").addEventListener("click", () => {
         document.body.removeChild(modal);
     });
+}
+
+// Generate and display path instructions
+function generatePathInstructions(path) {
+    if (!path || path.length < 2) return [];
+    
+    const instructions = [];
+    let currentDirection = null;
+    
+    for (let i = 0; i < path.length - 1; i++) {
+        const current = path[i];
+        const next = path[i+1];
+        
+        // Skip if not in the same layer (separate instruction for layer change)
+        if (current.layer !== next.layer) {
+            if (current.flags && current.flags.includes("elevator") || 
+                (current.connections.some(c => c.id === next.id && c.flags && c.flags.includes("elevator")))) {
+                instructions.push({
+                    type: 'elevator',
+                    text: `Take elevator to ${next.layer}`,
+                    icon: 'elevator',
+                    node: current.id
+                });
+            } else if (current.flags && current.flags.includes("stairs") || 
+                      (current.connections.some(c => c.id === next.id && c.flags && c.flags.includes("stairs")))) {
+                instructions.push({
+                    type: 'stairs',
+                    text: `Take stairs to ${next.layer}`,
+                    icon: 'stairs',
+                    node: current.id
+                });
+            } else {
+                instructions.push({
+                    type: 'layer-change',
+                    text: `Change to ${next.layer}`,
+                    icon: 'layer-change',
+                    node: current.id
+                });
+            }
+            continue;
+        }
+        
+        // Calculate direction
+        const angle = Math.atan2(next.y - current.y, next.x - current.x) * 180 / Math.PI;
+        const direction = getDirectionFromAngle(angle);
+        
+        // Check if destination is a named location
+        const isDestination = (i === path.length - 2);
+        const destName = next.name || `Node ${next.id}`;
+        
+        if (currentDirection !== direction || isDestination) {
+            instructions.push({
+                type: direction.toLowerCase(),
+                text: isDestination ? 
+                    `Arrive at ${destName}` : 
+                    `Go ${direction.toLowerCase()}`,
+                icon: direction.toLowerCase(),
+                node: current.id
+            });
+            currentDirection = direction;
+        }
+    }
+    
+    return instructions;
+}
+
+// Show path instructions in the UI
+function showPathInstructions(instructions) {
+    if (!instructions || instructions.length === 0) {
+        if (document.getElementById('instructionPanel')) {
+            document.getElementById('instructionPanel').style.display = 'none';
+        }
+        return;
+    }
+    
+    // Create or get the instruction panel
+    let panel = document.getElementById('instructionPanel');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'instructionPanel';
+        panel.className = 'ui_panel instruction-panel';
+        document.body.appendChild(panel);
+    }
+    
+    panel.style.display = 'block';
+    
+    // Show first instruction
+    const currentInstruction = instructions[0];
+    
+    panel.innerHTML = `
+        <div class="instruction-icon ${currentInstruction.icon || 'default'}"></div>
+        <div class="instruction-text">
+            <p class="instruction-main">${currentInstruction.text}</p>
+            <p class="instruction-detail">${getInstructionDetail(currentInstruction)}</p>
+        </div>
+        <div class="instruction-step">Step 1/${instructions.length}</div>
+    `;
+    
+    // Position at bottom center
+    panel.style.position = 'fixed';
+    panel.style.bottom = '20px';
+    panel.style.left = '50%';
+    panel.style.transform = 'translateX(-50%)';
+    panel.style.zIndex = '1000';
+}
+
+// Get direction name from angle
+function getDirectionFromAngle(angle) {
+    // Convert angle to 0-360 range
+    angle = (angle + 360) % 360;
+    
+    if (angle >= 337.5 || angle < 22.5) return 'East';
+    if (angle >= 22.5 && angle < 67.5) return 'Northeast';
+    if (angle >= 67.5 && angle < 112.5) return 'North';
+    if (angle >= 112.5 && angle < 157.5) return 'Northwest';
+    if (angle >= 157.5 && angle < 202.5) return 'West';
+    if (angle >= 202.5 && angle < 247.5) return 'Southwest';
+    if (angle >= 247.5 && angle < 292.5) return 'South';
+    return 'Southeast';
+}
+
+// Get details for an instruction
+function getInstructionDetail(instruction) {
+    switch (instruction.type) {
+        case 'elevator':
+            return 'Use the elevator to change floors';
+        case 'stairs':
+            return 'Take the stairs to change floors';
+        case 'layer-change':
+            return 'Move to the next area';
+        case 'north':
+        case 'northeast':
+        case 'east':
+        case 'southeast':
+        case 'south':
+        case 'southwest':
+        case 'west':
+        case 'northwest':
+            return `Continue ${instruction.type}`;
+        default:
+            return '';
+    }
 }
