@@ -361,7 +361,25 @@ function showNodePanel(node) {
   if (typeSelect) {
     typeSelect.value = node.type || "regular";
   }
-  
+
+  let existingDeleteBtn = document.getElementById("deleteNodeBtn");
+  if (existingDeleteBtn) {
+    existingDeleteBtn.remove();
+  }
+
+  const deleteButton = document.createElement("button");
+  deleteButton.id = "deleteNodeBtn";
+  deleteButton.textContent = "Delete Node";
+  deleteButton.style.marginTop = "6px";
+
+  // When clicked, set the global editorSelectedNode = this node, then call deleteSelectedNode()
+  deleteButton.addEventListener("click", () => {
+    editorSelectedNode = node;
+    deleteSelectedNode();
+  });
+
+  // Append this button at the bottom of the panel
+  nodePanel.appendChild(deleteButton);
   
   // Update connections list
   updateConnectionsList(node);

@@ -693,7 +693,24 @@ function findAreaAtPoint(x, y, layer = view.layer) {
 function showAreaPanel(area) {
   // Check if panel already exists
   let areaPanel = document.getElementById("areaPanel");
+  if (existingDeleteBtn) {
+    existingDeleteBtn.remove();
+  }
   
+  const deleteButton = document.createElement("button");
+  deleteButton.id = "deleteAreaBtn";
+  deleteButton.textContent = "Delete Area";
+  deleteButton.style.marginTop = "6px";
+
+  deleteButton.addEventListener("click", () => {
+    // Mark this area as selected, then call the built-in delete function
+    editorSelectedArea = area;
+    deleteSelectedArea();
+  });
+
+  // Insert the button into the area panel
+  areaPanel.appendChild(deleteButton);
+
   // Create panel if it doesn't exist
   if (!areaPanel) {
     areaPanel = document.createElement("div");
