@@ -1,229 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TXST Navigation</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TXST Navigation</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body style="user-select:none;">
-    <div id="mapBackground"
-        class="fixed_position" style="z-index:-2; background-color: #f0f0f0; width: 100%; height: 100%;"></div>
-    </div>
-    <canvas id="overlay" class="fixed_position" style="z-index:-1;"></canvas>
-    
-    <div class="flex h-screen bg-gray-100">
-        <!-- Left panel - Controls -->
-        <div id="routePanel" class="ui_panel">
-            <h1 class="text-xl font-bold mb-4 flex items-center">
-                <span class="mr-2">🗺️</span>
-                TXST Navigation
-            </h1>
-            
-            <div class="mb-4">
-                <label for="origin" class="block text-sm font-medium mb-1">From:</label>
-                <input 
-                    type="text" 
-                    id="origin" 
-                    class="w-full p-2 border rounded" 
-                    list="originSuggestions"
-                    placeholder="Enter starting point"
-                />
-                <datalist id="originSuggestions"></datalist>
-            </div>
-            
-            <div class="mb-4">
-                <label for="destination" class="block text-sm font-medium mb-1">To:</label>
-                <input 
-                    type="text" 
-                    id="destination" 
-                    class="w-full p-2 border rounded"
-                    list="destinationSuggestions"
-                    placeholder="Enter destination"
-                />
-                <datalist id="destinationSuggestions"></datalist>
-            </div>
-            
-            <button 
-                id="go_button" 
-                class="w-full bg-blue-600 text-white p-2 rounded font-medium flex items-center justify-center"
-            >
-                <svg width="16" height="16" fill="white" style="margin-right: 6px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M12 2c-4.4 0-8 3.6-8 8 0 5.4 7 11.5 7.3 11.8.2.1.5.2.7.2.2 0 .5-.1.7-.2.3-.3 7.3-6.4 7.3-11.8 0-4.4-3.6-8-8-8zm0 17.7c-2.1-2-6-6.3-6-9.7 0-3.3 2.7-6 6-6s6 2.7 6 6c0 3.4-3.9 7.7-6 9.7z"/>
-                    <path d="M12 6c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
-                </svg>
-                Find Route
-            </button>
-            
-            <div class="mt-4">
-                <div class="flex items-center mb-2">
-                    <input type="checkbox" id="avoidStairs" class="mr-2" />
-                    <label for="avoidStairs" class="text-sm">Avoid Stairs</label>
-                </div>
-                <div class="flex items-center">
-                    <input type="checkbox" id="avoidElevators" class="mr-2" />
-                    <label for="avoidElevators" class="text-sm">Avoid Elevators</label>
-                </div>
-            </div>
-            
-            <div class="mb-4 mt-4">
-                <label for="layerSelect" class="block text-sm font-medium mb-1">Current Floor:</label>
-                <select 
-                    id="layerSelect" 
-                    class="w-full p-2 border rounded"
-                ></select>
-            </div>
-            
-            <div class="mt-6">
-                <button 
-                    id="toggleEditor" 
-                    class="text-sm text-blue-600 underline"
-                >
-                    Show Editor Tools
-                </button>
-                
-                <div id="editorTools" style="display:none;" class="mt-2 p-2 bg-gray-100 rounded text-sm">
-                    <p id="editorMode" class="font-medium mb-2">Editor Mode: None</p>
-                    <div class="editor-buttons grid grid-cols-2 gap-1 mb-2">
-                        <button data-mode="add" class="p-1 rounded border text-xs">Add Node</button>
-                        <button data-mode="polygon" class="p-1 rounded border text-xs">Add Area</button>
-                        <button data-mode="edit" class="p-1 rounded border text-xs">Edit</button>
-                        <button data-mode="connect" class="p-1 rounded border text-xs">Connect</button>
-                    </div>
-                    <button 
-                        onclick="setEditorMode('none')" 
-                        class="w-full p-1 bg-red-100 rounded border border-red-300 text-xs text-red-700"
-                    >
-                        Exit Editor Mode
-                    </button>
-                    
-                    <!-- Area type selector for add mode -->
-                    <div id="areaTypeContainer" class="mt-2" style="display:none;">
-                        <label class="block text-xs font-medium mb-1">Area Type:</label>
-                        <select id="areaType" class="w-full p-1 text-xs border rounded">
-                            <option value="classroom">Classroom</option>
-                            <option value="office">Office</option>
-                            <option value="hallway">Hallway</option>
-                            <option value="elevator">Elevator</option>
-                            <option value="stairs">Stairs</option>
-                            <option value="entrance">Entrance</option>
-                            <option value="restroom">Restroom</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Legend -->
-            <div id="legendPanel" class="mt-4 p-2 bg-gray-50 rounded border">
-                <p class="text-xs font-medium mb-2">Map Legend</p>
-                <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 bg-blue-200 mr-1"></div>
-                        <span>Classroom</span>
-                    </div>
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 bg-green-200 mr-1"></div>
-                        <span>Office</span>
-                    </div>
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 bg-pink-200 mr-1"></div>
-                        <span>Elevator</span>
-                    </div>
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 bg-orange-200 mr-1"></div>
-                        <span>Stairs</span>
-                    </div>
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 bg-gray-200 mr-1"></div>
-                        <span>Hallway</span>
-                    </div>
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 bg-blue-300 mr-1"></div>
-                        <span>Entrance</span>
-                    </div>
-                </div>
-            </div>
+  <div id="mapBackground" class="fixed_position" style="z-index:-2; background-color: #f0f0f0; width: 100%; height: 100%;">
+  </div>
+  <canvas id="overlay" class="fixed_position" style="z-index:-1;"></canvas>
+  
+  <div class="flex h-screen bg-gray-100">
+    <!-- Left panel - Controls -->
+    <div id="routePanel" class="ui_panel">
+      <h1 class="text-xl font-bold mb-4 flex items-center">
+        <span class="mr-2">🗺️</span>
+        TXST Navigation
+      </h1>
+      
+      <div class="mb-4">
+        <label for="origin" class="block text-sm font-medium mb-1">From:</label>
+        <input 
+          type="text" 
+          id="origin" 
+          class="w-full p-2 border rounded" 
+          list="originSuggestions"
+          placeholder="Enter starting point"
+        />
+        <datalist id="originSuggestions"></datalist>
+      </div>
+      
+      <div class="mb-4">
+        <label for="destination" class="block text-sm font-medium mb-1">To:</label>
+        <input 
+          type="text" 
+          id="destination" 
+          class="w-full p-2 border rounded"
+          list="destinationSuggestions"
+          placeholder="Enter destination"
+        />
+        <datalist id="destinationSuggestions"></datalist>
+      </div>
+      
+      <button 
+        id="go_button" 
+        class="w-full bg-blue-600 text-white p-2 rounded font-medium flex items-center justify-center"
+      >
+        <svg width="16" height="16" fill="white" style="margin-right: 6px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 2c-4.4 0-8 3.6-8 8 0 5.4 7 11.5 7.3 11.8.2.1.5.2.7.2.2 0 .5-.1.7-.2.3-.3 7.3-6.4 7.3-11.8 0-4.4-3.6-8-8-8zm0 17.7c-2.1-2-6-6.3-6-9.7 0-3.3 2.7-6 6-6s6 2.7 6 6c0 3.4-3.9 7.7-6 9.7z"/>
+          <path d="M12 6c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+        </svg>
+        Find Route
+      </button>
+      
+      <div class="mt-4">
+        <div class="flex items-center mb-2">
+          <input type="checkbox" id="avoidStairs" class="mr-2" />
+          <label for="avoidStairs" class="text-sm">Avoid Stairs</label>
         </div>
+        <div class="flex items-center">
+          <input type="checkbox" id="avoidElevators" class="mr-2" />
+          <label for="avoidElevators" class="text-sm">Avoid Elevators</label>
+        </div>
+      </div>
+      
+      <div class="mb-4 mt-4">
+        <label for="layerSelect" class="block text-sm font-medium mb-1">Current Floor:</label>
+        <select 
+          id="layerSelect" 
+          class="w-full p-2 border rounded"
+        ></select>
+      </div>
+      
+      <div class="mt-6">
+        <button 
+          id="toggleEditor" 
+          class="text-sm text-blue-600 underline"
+        >
+          Show Editor Tools
+        </button>
         
-        <!-- Main map area -->
-        <div class="flex-1 relative overflow-hidden">
-            <!-- Map controls -->
-            <div id="mapControls" class="absolute top-4 right-4 bg-white shadow rounded p-2 flex flex-col">
-                <button id="zoomIn" class="p-2 hover:bg-gray-100 rounded">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="16" />
-                        <line x1="8" y1="12" x2="16" y2="12" />
-                    </svg>
-                </button>
-                <button id="zoomOut" class="p-2 hover:bg-gray-100 rounded">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="8" y1="12" x2="16" y2="12" />
-                    </svg>
-                </button>
-            </div>
-    
-            <!-- Node metadata panel -->
-            <span id="nodePanel" class="ui_panel" style="display:none; position:absolute; top:20px; right:20px; z-index: 100;">
-                <h3 class="font-bold mb-2">Node Information</h3>
-                <div class="mb-2">
-                    <label for="nodeName" class="block text-xs mb-1">Name:</label>
-                    <input type="text" id="nodeName" class="w-full p-1 text-sm border rounded" />
-                </div>
-                <div class="mb-2">
-                    <label class="block text-xs mb-1">Position:</label>
-                    <div class="flex space-x-2">
-                        <input type="text" id="nodeX" class="w-1/2 p-1 text-sm border rounded" />
-                        <input type="text" id="nodeY" class="w-1/2 p-1 text-sm border rounded" />
-                    </div>
-                </div>
-                <div class="mb-2">
-                    <label class="block text-xs mb-1">Type:</label>
-                    <select id="nodeType" class="w-full p-1 text-sm border rounded">
-                        <option value="regular">Regular</option>
-                        <option value="elevator">Elevator</option>
-                        <option value="stairs">Stairs</option>
-                        <option value="entrance">Entrance</option>
-                    </select>
-                </div>
-                <div class="mb-2">
-                    <label class="block text-xs mb-1">Connections:</label>
-                    <div id="nodeConnections" class="text-xs bg-gray-50 p-1 rounded">
-                        <!-- Will be populated dynamically -->
-                    </div>
-                </div>
-                <div class="flex justify-end space-x-2">
-                    <button id="closeNodePanel" class="px-2 py-1 bg-gray-200 text-xs rounded">
-                        Close
-                    </button>
-                    <button id="saveNodeData" class="px-2 py-1 bg-blue-500 text-white text-xs rounded">
-                        Save
-                    </button>
-                </div>
-            </span>
+        <div id="editorTools" style="display:none;" class="mt-2 p-2 bg-gray-100 rounded text-sm">
+          <p id="editorMode" class="font-medium mb-2">Editor Mode: None</p>
+          <div class="editor-buttons grid grid-cols-2 gap-1 mb-2">
+            <button data-mode="add" class="p-1 rounded border text-xs">Add Node</button>
+            <button data-mode="polygon" class="p-1 rounded border text-xs">Add Area</button>
+            <button data-mode="edit" class="p-1 rounded border text-xs">Edit</button>
+            <button data-mode="connect" class="p-1 rounded border text-xs">Connect</button>
+          </div>
+          <button 
+            onclick="setEditorMode('none')" 
+            class="w-full p-1 bg-red-100 rounded border border-red-300 text-xs text-red-700"
+          >
+            Exit Editor Mode
+          </button>
+          
+          <!-- Area type selector for Add Area mode -->
+          <div id="areaTypeContainer" class="mt-2" style="display:none;">
+            <label class="block text-xs font-medium mb-1">Area Type:</label>
+            <select id="areaType" class="w-full p-1 text-xs border rounded">
+              <option value="classroom">Classroom</option>
+              <option value="office">Office</option>
+              <option value="hallway">Hallway</option>
+              <option value="elevator">Elevator</option>
+              <option value="stairs">Stairs</option>
+              <option value="entrance">Entrance</option>
+              <option value="restroom">Restroom</option>
+            </select>
+          </div>
         </div>
+      </div>
+      
+      <!-- Legend -->
+      <div id="legendPanel" class="mt-4 p-2 bg-gray-50 rounded border">
+        <p class="text-xs font-medium mb-2">Map Legend</p>
+        <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-blue-200 mr-1"></div>
+            <span>Classroom</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-green-200 mr-1"></div>
+            <span>Office</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-pink-200 mr-1"></div>
+            <span>Elevator</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-orange-200 mr-1"></div>
+            <span>Stairs</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-gray-200 mr-1"></div>
+            <span>Hallway</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-blue-300 mr-1"></div>
+            <span>Entrance</span>
+          </div>
+        </div>
+      </div>
     </div>
     
-    <!-- Current instructions when navigating -->
-    <div id="instructionPanel" class="instruction-panel" style="display:none;">
-        <div class="bg-blue-500 text-white rounded-full p-2 mr-3 instruction-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
+    <!-- Main map area -->
+    <div class="flex-1 relative overflow-hidden">
+      <!-- Map controls -->
+      <div id="mapControls" class="absolute top-4 right-4 bg-white shadow rounded p-2 flex flex-col">
+        <button id="zoomIn" class="p-2 hover:bg-gray-100 rounded">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+        </button>
+        <button id="zoomOut" class="p-2 hover:bg-gray-100 rounded">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Node panel (for editing) -->
+      <div id="nodePanel" class="node-panel" style="display:none;">
+        <div class="flex justify-between mb-2">
+          <h3 class="text-sm font-medium">Node Properties</h3>
+          <button id="closeNodePanel" class="text-xs">×</button>
         </div>
-        <div class="instruction-text">
-            <p class="instruction-main">Continue straight</p>
-            <p class="instruction-detail">Walk along the hallway towards the destination</p>
+        <div class="mb-2">
+          <label for="nodeName" class="block text-xs font-medium">Name</label>
+          <input type="text" id="nodeName" class="w-full p-1 border rounded text-xs">
         </div>
+        <div class="grid grid-cols-2 gap-1 mb-2">
+          <div>
+            <label for="nodeX" class="block text-xs font-medium">X</label>
+            <input type="number" id="nodeX" class="w-full p-1 border rounded text-xs">
+          </div>
+          <div>
+            <label for="nodeY" class="block text-xs font-medium">Y</label>
+            <input type="number" id="nodeY" class="w-full p-1 border rounded text-xs">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label for="nodeType" class="block text-xs font-medium">Type</label>
+          <select id="nodeType" class="w-full p-1 border rounded text-xs">
+            <option value="regular">Regular</option>
+            <option value="entrance">Entrance</option>
+            <option value="elevator">Elevator</option>
+            <option value="stairs">Stairs</option>
+            <option value="restroom">Restroom</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="block text-xs font-medium">Connections</label>
+          <div id="nodeConnections" class="text-xs"></div>
+        </div>
+        <button id="saveNodeData" class="w-full bg-blue-500 text-white text-xs p-1 rounded">Save</button>
+      </div>
+      
+      <!-- Instruction panel -->
+      <div id="instructionPanel" class="instruction-panel" style="display:none;">
+        <div class="instruction-main"></div>
+        <div class="instruction-detail text-xs"></div>
+      </div>
     </div>
-
-    <!-- Load modular JavaScript files -->
-    <script src="js/utils.js"></script>
-    <script src="js/data.js"></script>
-    <script src="js/pathfinding.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/editor.js"></script>
-    <script src="js/main.js"></script>
+  </div>
+  
+  <!-- Scripts in correct order at bottom -->
+  <script src="data.js"></script>
+  <script src="editor.js"></script>
+  <script src="pathfinding.js"></script>
+  <script src="utils.js"></script>
+  <script src="ui.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>

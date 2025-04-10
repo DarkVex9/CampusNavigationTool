@@ -4,107 +4,88 @@
 
 // Global variables
 var editorAllowed = true; // Whether editor tools are allowed
-
-view.zoom = 1.5;
-view.x = -100;
-view.y = -50;
+var drawNodes = false;    // Whether to draw nodes by default
 
 // Initialize the application
 function init() {
     console.log("Initializing Navigation Application");
     
-    // Initialize UI
+    // Set up canvas
+    canvas = document.getElementById("overlay");
+    ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Get reference to map image
+    mapImgElement = document.getElementById("mainMapImg");
+    
+    // Initialize UI elements
     initUI();
     
-    // Load test data or create empty structures
-    initializeEmptyData();
+    // Load test data
+    initializeTestData();
     
-    // Set up event handlers for the buttons
-    setupEventHandlers();
+    // Set up event listeners
+    setupEventListeners();
     
     // Initial render
     redraw();
+    
+    // Debug map loading
+    checkMapSetup();
+    
+    console.log("Initialization complete");
 }
 
-// Initialize empty data structures
-function initializeEmptyData() {
-    // Create a default layer if none exists
-    if (loadedLayers.length === 0) {
-        const defaultLayer = "default";
-        loadedLayers.push(defaultLayer);
-        nodeGraph[defaultLayer] = [];
-        namedNodes[defaultLayer] = [];
-        areas[defaultLayer] = [];
-        layerData[defaultLayer] = { 
-            imgScale: 1, 
-            mapImage: "blank.png" // This won't be used yet
-        };
-        
-        view.layer = defaultLayer;
-        
-        // Add to layer select in UI
-        addLayerToSelect(defaultLayer);
+// Setup all event listeners
+function setupEventListeners() {
+    // Add event listeners for UI controls
+    document.getElementById("go_button").addEventListener("click", handleGoButton);
+    document.addEventListener("keydown", handleKeyPress);
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("wheel", handleScroll);
+    
+    // Layer selection dropdown
+    const layerSelect = document.getElementById("layerSelect");
+    if (layerSelect) {
+        layerSelect.addEventListener("change", function() {
+            view.layer = this.value;
+            console.log("Layer changed to:", view.layer);
+            redraw();
+        });
     }
-}
-
-// Set up event handlers for UI elements
-function setupEventHandlers() {
-    // Map controls
-    document.getElementById("zoomIn").addEventListener("click", function() {
-        view.zoom = Math.min(view.zoom * 1.2, 5);
+    
+    // Node panel controls
+    const nodeNameInput = document.getElementById("nodeName");
+    if (nodeNameInput) {
+        nodeNameInput.addEventListener("change", updateNodeName);
+    }
+    
+    const isStairsCheckbox = document.getElementById("isStairs");
+    if (isStairsCheckbox) {
+        isStairsCheckbox.addEventListener("change", updateNodeFlags);
+    }
+    
+    const isElevatorCheckbox = document.getElementById("isElevator");
+    if (isElevatorCheckbox) {
+        isElevatorCheckbox.addEventListener("change", updateNodeFlags);
+    }
+    
+    const addLayerChangeBtn = document.getElementById("addLayerChangeConnection");
+    if (addLayerChangeBtn) {
+        addLayerChangeBtn.addEventListener("click", showLayerChangeUI);
+    }
+    
+    // Handle window resize
+    window.addEventListener("resize", function() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
         redraw();
     });
     
-    document.getElementById("zoomOut").addEventListener("click", function() {
-        view.zoom = Math.max(view.zoom / 1.2, 0.2);
-        redraw();
-    });
-    
-    // Make sure Draw Nodes is enabled by default for visibility
-    drawNodes = true;
-}
-
-// Add sample areas for testing
-function addSampleAreas() {
-    // Only add if no areas exist
-    if (areas[view.layer] && areas[view.layer].length > 0) {
-        return;
-    }
-    
-    // Add a sample classroom
-    const classroom = createArea(
-        view.layer,
-        "Classroom 101",
-        "classroom",
-        [
-            { x: 20, y: 20 },
-            { x: 100, y: 20 },
-            { x: 100, y: 80 },
-            { x: 20, y: 80 }
-        ]
-    );
-    
-    // Add a sample hallway
-    const hallway = createArea(
-        view.layer,
-        "Main Hallway",
-        "hallway",
-        [
-            { x: 20, y: 100 },
-            { x: 200, y: 100 },
-            { x: 200, y: 120 },
-            { x: 20, y: 120 }
-        ]
-    );
-    
-    // Generate nodes for the areas
-    const classroomNode = generateNodesForArea(classroom);
-    const hallwayNode = generateNodesForArea(hallway);
-    
-    // Connect the nodes
-    connectNodes(classroomNode, hallwayNode);
-    
-    console.log("Added sample areas for testing");
+    console.log("Event listeners initialized");
 }
 
 // Call init when the page loads

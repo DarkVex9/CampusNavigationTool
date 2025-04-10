@@ -40,13 +40,11 @@ function findByName(searchString) {
   // First try exact match
   for (let i = 0; i < loadedLayers.length; i++) {
     const layer = loadedLayers[i];
-    
     if (!namedNodes[layer]) continue;
     
     for (let j = 0; j < namedNodes[layer].length; j++) {
       const namedNode = namedNodes[layer][j];
       if (!namedNode) continue;
-      
       const node = nodeGraph[layer][namedNode.id];
       
       if (node && namedNode.name && namedNode.name.toLowerCase() === searchString) {
@@ -58,13 +56,11 @@ function findByName(searchString) {
   // Then try contains match
   for (let i = 0; i < loadedLayers.length; i++) {
     const layer = loadedLayers[i];
-    
     if (!namedNodes[layer]) continue;
     
     for (let j = 0; j < namedNodes[layer].length; j++) {
       const namedNode = namedNodes[layer][j];
       if (!namedNode) continue;
-      
       const node = nodeGraph[layer][namedNode.id];
       
       if (node && namedNode.name && namedNode.name.toLowerCase().includes(searchString)) {
@@ -126,7 +122,7 @@ function createArea(layer, name, type, points) {
   }
   
   // Generate new ID
-  const id = areas[layer].length > 0 ? 
+  const id = areas[layer].length > 0 ?
     Math.max(...areas[layer].map(a => a.id)) + 1 : 1;
   
   const area = {
@@ -147,7 +143,6 @@ function associateNodeWithArea(node, area) {
   if (!area.nodes) {
     area.nodes = [];
   }
-  
   if (!area.nodes.includes(node.id)) {
     area.nodes.push(node.id);
   }
@@ -183,11 +178,9 @@ function drawAreas() {
     // Draw the polygon
     ctx.beginPath();
     ctx.moveTo(...posToCanvasPos(area.points[0].x, area.points[0].y));
-    
     for (let i = 1; i < area.points.length; i++) {
       ctx.lineTo(...posToCanvasPos(area.points[i].x, area.points[i].y));
     }
-    
     ctx.closePath();
     ctx.fill();
     ctx.globalAlpha = 1; // Reset alpha
@@ -213,11 +206,9 @@ function drawAreas() {
       ctx.setLineDash([5, 3]);
       ctx.beginPath();
       ctx.moveTo(...posToCanvasPos(area.points[0].x, area.points[0].y));
-      
       for (let i = 1; i < area.points.length; i++) {
         ctx.lineTo(...posToCanvasPos(area.points[i].x, area.points[i].y));
       }
-      
       ctx.closePath();
       ctx.stroke();
       ctx.setLineDash([]);
@@ -279,11 +270,9 @@ function drawAreaIcon(area, centerX, centerY) {
   }
 }
 
-// Initialize with test data
+// Example: Initialize with some test data if you like
 function initializeTestData() {
-  // Add test floors/layers
   const layers = ['outside', 'floor1', 'floor2'];
-  
   for (const layer of layers) {
     if (!loadedLayers.includes(layer)) {
       loadedLayers.push(layer);
@@ -294,190 +283,7 @@ function initializeTestData() {
         imgScale: 1, 
         mapImage: `${layer}.png` 
       };
-      
-      // Add to layer select
-      addLayerToSelect(layer);
     }
   }
-  
-  // Set default layer
-  view.layer = 'floor1';
-  document.getElementById('layerSelect').value = view.layer;
-  
-  // Add sample data for floor1
-  if (areas['floor1'].length === 0) {
-    // Add rooms
-    const room101 = createArea(
-      'floor1',
-      'Room 101',
-      'classroom',
-      [
-        {x: 100, y: 100}, 
-        {x: 200, y: 100}, 
-        {x: 200, y: 200}, 
-        {x: 100, y: 200}
-      ]
-    );
-    
-    const room102 = createArea(
-      'floor1',
-      'Room 102',
-      'office',
-      [
-        {x: 220, y: 100}, 
-        {x: 320, y: 100}, 
-        {x: 320, y: 200}, 
-        {x: 220, y: 200}
-      ]
-    );
-    
-    const elevator = createArea(
-      'floor1',
-      'Elevator',
-      'elevator',
-      [
-        {x: 340, y: 100}, 
-        {x: 380, y: 100}, 
-        {x: 380, y: 140}, 
-        {x: 340, y: 140}
-      ]
-    );
-    
-    const stairs = createArea(
-      'floor1',
-      'Stairs',
-      'stairs',
-      [
-        {x: 340, y: 160}, 
-        {x: 380, y: 160}, 
-        {x: 380, y: 200}, 
-        {x: 340, y: 200}
-      ]
-    );
-    
-    const hallway = createArea(
-      'floor1',
-      'Hallway',
-      'hallway',
-      [
-        {x: 100, y: 220}, 
-        {x: 380, y: 220}, 
-        {x: 380, y: 240}, 
-        {x: 100, y: 240}
-      ]
-    );
-    
-    // Create nodes for each area
-    const room101Node = generateNodesForArea(room101);
-    const room102Node = generateNodesForArea(room102);
-    const elevatorNode = generateNodesForArea(elevator);
-    elevatorNode.type = "elevator";
-    
-    const stairsNode = generateNodesForArea(stairs);
-    stairsNode.type = "stairs";
-    
-    const hallwayNode1 = createNode('floor1', 150, 230, 'Hallway 1');
-    associateNodeWithArea(hallwayNode1, hallway);
-    
-    const hallwayNode2 = createNode('floor1', 360, 230, 'Hallway 2');
-    associateNodeWithArea(hallwayNode2, hallway);
-    
-    // Connect nodes
-    connectNodes(room101Node, hallwayNode1);
-    connectNodes(room102Node, hallwayNode2);
-    connectNodes(hallwayNode1, hallwayNode2);
-    connectNodes(hallwayNode2, elevatorNode);
-    connectNodes(hallwayNode2, stairsNode);
-    
-    // Add floor 2 elements
-    const room201 = createArea(
-      'floor2',
-      'Room 201',
-      'classroom',
-      [
-        {x: 100, y: 100}, 
-        {x: 200, y: 100}, 
-        {x: 200, y: 200}, 
-        {x: 100, y: 200}
-      ]
-    );
-    
-    const elevator2 = createArea(
-      'floor2',
-      'Elevator Floor 2',
-      'elevator',
-      [
-        {x: 340, y: 100}, 
-        {x: 380, y: 100}, 
-        {x: 380, y: 140}, 
-        {x: 340, y: 140}
-      ]
-    );
-    
-    const room201Node = generateNodesForArea(room201);
-    const elevator2Node = generateNodesForArea(elevator2);
-    elevator2Node.type = "elevator";
-    
-    // Connect these nodes
-    connectNodes(room201Node, elevator2Node);
-    
-    // Create layer connections
-    connectNodes(elevatorNode, elevator2Node);
-    
-    // Add entrance on outside layer
-    const entrance = createArea(
-      'outside',
-      'Main Entrance',
-      'entrance',
-      [
-        {x: 150, y: 150}, 
-        {x: 200, y: 150}, 
-        {x: 200, y: 180}, 
-        {x: 150, y: 180}
-      ]
-    );
-    
-    const entranceNode = generateNodesForArea(entrance);
-    entranceNode.type = "entrance";
-  }
-  
-  // Refresh suggestions
-  populateSuggestions();
 }
 
-// Find area by name
-function findAreaByName(name) {
-  if (!name) return null;
-  name = name.trim().toLowerCase();
-  
-  // Try exact match first
-  for (const layer of loadedLayers) {
-    if (!areas[layer]) continue;
-    
-    const area = areas[layer].find(a => a.name && a.name.toLowerCase() === name);
-    if (area) return area;
-  }
-  
-  // Then try partial match
-  for (const layer of loadedLayers) {
-    if (!areas[layer]) continue;
-    
-    const area = areas[layer].find(a => a.name && a.name.toLowerCase().includes(name));
-    if (area) return area;
-  }
-  
-  return null;
-}
-
-// Find area at a point
-function findAreaAtPoint(x, y, layer = view.layer) {
-  if (!areas[layer]) return null;
-  
-  for (const area of areas[layer]) {
-    if (isPointInPolygon(x, y, area.points)) {
-      return area;
-    }
-  }
-  
-  return null;
-}
