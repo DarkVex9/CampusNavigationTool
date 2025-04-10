@@ -5,6 +5,7 @@
 // Global variables
 var editorAllowed = true; // Whether editor tools are allowed
 var drawNodes = false;    // Whether to draw nodes by default
+var loadingCount = 0;
 
 // Initialize the application
 function init() {
@@ -12,81 +13,133 @@ function init() {
     
     // Set up canvas
     canvas = document.getElementById("overlay");
+    if (!canvas) {
+      console.error("Overlay canvas element not found!");
+      return;
+    }
+    
     ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    // Get reference to map image
-    mapImgElement = document.getElementById("mainMapImg");
-    
-    // Initialize UI elements
-    initUI();
-    
-    // Load test data
+    // Load test data first
     initializeTestData();
+    
+    // Then initialize UI elements
+    initUI();
     
     // Set up event listeners
     setupEventListeners();
     
-    // Initial render
-    redraw();
+    // Enable drawing by default
+    drawNodes = true;
     
-    // Debug map loading
-    checkMapSetup();
+     // Reset the view to center
+     view.x = 0;
+     view.y = 0;
+     view.zoom = 1;
+     view.layer = 'outside';
+     
+     // Initial render
+     redraw();
+     
+     // Check map setup
+     checkMapSetup(); 
     
     console.log("Initialization complete");
-}
-
+  }
 // Setup all event listeners
 function setupEventListeners() {
-    // Add event listeners for UI controls
-    document.getElementById("go_button").addEventListener("click", handleGoButton);
-    document.addEventListener("keydown", handleKeyPress);
-    document.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-    document.addEventListener("wheel", handleScroll);
-    
-    // Layer selection dropdown
-    const layerSelect = document.getElementById("layerSelect");
-    if (layerSelect) {
-        layerSelect.addEventListener("change", function() {
-            view.layer = this.value;
-            console.log("Layer changed to:", view.layer);
-            redraw();
-        });
-    }
-    
-    // Node panel controls
-    const nodeNameInput = document.getElementById("nodeName");
-    if (nodeNameInput) {
-        nodeNameInput.addEventListener("change", updateNodeName);
-    }
-    
-    const isStairsCheckbox = document.getElementById("isStairs");
-    if (isStairsCheckbox) {
-        isStairsCheckbox.addEventListener("change", updateNodeFlags);
-    }
-    
-    const isElevatorCheckbox = document.getElementById("isElevator");
-    if (isElevatorCheckbox) {
-        isElevatorCheckbox.addEventListener("change", updateNodeFlags);
-    }
-    
-    const addLayerChangeBtn = document.getElementById("addLayerChangeConnection");
-    if (addLayerChangeBtn) {
-        addLayerChangeBtn.addEventListener("click", showLayerChangeUI);
-    }
-    
-    // Handle window resize
-    window.addEventListener("resize", function() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        redraw();
-    });
-    
-    console.log("Event listeners initialized");
+  // Add event listeners for UI controls
+  document.getElementById("go_button").addEventListener("click", handleGoButton);
+  document.addEventListener("keydown", handleKeyPress);
+  document.addEventListener("mousedown", handleMouseDown);
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseup", handleMouseUp);
+  document.addEventListener("wheel", handleScroll);
+  
+  // Layer selection dropdown
+  const layerSelect = document.getElementById("layerSelect");
+  if (layerSelect) {
+      layerSelect.addEventListener("change", function() {
+          view.layer = this.value;
+          console.log("Layer changed to:", view.layer);
+          redraw();
+      });
+  }
+  
+  // Add listeners for node panel inputs
+  setupNodePanelListeners();
+  
+  // Add listeners for editor buttons
+  setupEditorButtonListeners();
+  
+  // Handle window resize
+  window.addEventListener("resize", function() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      redraw();
+  });
+  
+  console.log("Event listeners initialized");
 }
+
+function setupEditorButtonListeners() {
+  const editorButtons = document.querySelectorAll('.editor-buttons button');
+  editorButtons.forEach(button => {
+      button.addEventListener('click', function() {
+          const mode = this.getAttribute('data-mode');
+          setEditorMode(mode);
+      });
+  });
+  
+  // Exit editor mode button
+  const exitEditorButton = document.querySelector('button[onclick="setEditorMode(\'none\')"]');
+  if (exitEditorButton) {
+      // Replace the inline onclick with a proper event listener
+      exitEditorButton.removeAttribute('onclick');
+      exitEditorButton.addEventListener('click', function() {
+          setEditorMode('none');
+      });
+  }
+}
+
 
 // Call init when the page loads
 window.addEventListener("load", init);
+
+function setupNodePanelListeners() {
+  const nodeNameInput = document.getElementById("nodeName");
+  if (nodeNameInput) {
+      nodeNameInput.addEventListener("change", updateNodeName);
+  }
+  
+  const nodeXInput = document.getElementById("nodeX");
+  if (nodeXInput) {
+      nodeXInput.addEventListener("change", function() {
+          if (!editorSelectedNode) return;
+          editorSelectedNode.x = parseFloat(this.value);
+          moveNode(editorSelectedNode, editorSelectedNode.x, editorSelectedNode.y);
+          redraw();
+      });
+  }
+  
+  const nodeYInput = document.getElementById("nodeY");
+  if (nodeYInput) {
+      nodeYInput.addEventListener("change", function() {
+          if (!editorSelectedNode) return;
+          editorSelectedNode.y = parseFloat(this.value);
+          moveNode(editorSelectedNode, editorSelectedNode.x, editorSelectedNode.y);
+          redraw();
+      });
+  }
+  
+  const nodeTypeSelect = document.getElementById("nodeType");
+  if (nodeTypeSelect) {
+      nodeTypeSelect.addEventListener("change", function() {
+          if (!editorSelectedNode) return;
+          editorSelectedNode.type = this.value;
+          redraw();
+      });
+  }
+}

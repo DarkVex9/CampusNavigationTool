@@ -237,11 +237,25 @@ function handleMouseDown(event) {
     } else if (editorMode === "add") {
       const worldPos = canvasPosToPos(event.pageX, event.pageY);
       editorSelectedNode = createNode(view.layer, worldPos[0], worldPos[1]);
-      console.log("Node added:", editorSelectedNode);
-      // If in edit mode, show the node panel immediately
-      if (editorMode === "edit") {
-        showNodePanel(editorSelectedNode);
+      
+      // Make nodes more visible by giving them a name by default
+      editorSelectedNode.name = "Node " + editorSelectedNode.id;
+      
+      // Add to named nodes
+      if (!namedNodes[view.layer]) {
+        namedNodes[view.layer] = [];
       }
+      namedNodes[view.layer].push({
+        id: editorSelectedNode.id,
+        name: editorSelectedNode.name
+      });
+      
+      console.log("Node added:", editorSelectedNode);
+      
+      // Show the node panel immediately for editing
+      showNodePanel(editorSelectedNode);
+      
+      // Redraw to show the new node
       redraw();
     } else if (editorMode === "polygon") {
       if (isDrawingPolygon) {
@@ -463,4 +477,512 @@ function showAreaPropertiesDialog(callback) {
   document.getElementById("cancel-area").addEventListener("click", function() {
     document.body.removeChild(dialog);
   });
+}
+
+// Set the editor mode function - critical missing piece
+function setEditorMode(mode) {
+  console.log("Changing editor mode to:", mode);
+  
+  // Set the current mode
+  editorMode = mode;
+  
+  // Update UI to reflect current mode
+  document.getElementById("editorMode").textContent = "Editor Mode: " + 
+    mode.charAt(0).toUpperCase() + mode.slice(1);
+  
+  // Toggle area type selector visibility
+  const areaTypeContainer = document.getElementById("areaTypeContainer");
+  if (areaTypeContainer) {
+    areaTypeContainer.style.display = (mode === "polygon") ? "block" : "none";
+  }
+  
+  // Update button states
+  const buttons = document.querySelectorAll(".editor-buttons button");
+  buttons.forEach(button => {
+    if (button.dataset.mode === mode) {
+      button.classList.add("active");
+    } else {
+      button.classList.remove("active");
+    }
+  });
+  
+  // Handle polygon mode specially
+  if (mode === "polygon") {
+    isDrawingPolygon = true;
+    polygonPoints = [];
+    console.log("Started polygon drawing");
+  }
+  
+  // Deselect nodes if changing mode
+  if (mode !== "edit" && mode !== "move" && mode !== "connect") {
+    editorSelectedNode = null;
+    document.getElementById("nodePanel").style.display = "none";
+  }
+  
+  // Reset temporary connection display
+  tempConnectingNode = null;
+  
+  // Refresh display
+  redraw();
+}
+
+// Create a node
+function createNode(layer, x, y, type = "regular") {
+  // If the layer doesn't exist yet, initialize it
+  if (!nodeGraph[layer]) {
+    nodeGraph[layer] = [];
+    namedNodes[layer] = [];
+  }
+  
+  // Find a free ID
+  let id = 0;
+  while (id < nodeGraph[layer].length && nodeGraph[layer][id] !== null) {
+    id++;
+  }
+  
+  const node = {
+    id: id,
+    x: x,
+    y: y,
+    layer: layer,
+    connections: [],
+    type: type
+  };
+  
+  // Add to nodegraph array
+  if (id < nodeGraph[layer].length) {
+    nodeGraph[layer][id] = node;
+  } else {
+    nodeGraph[layer].push(node);
+  }
+  
+  return node;
+}
+
+// Connect two nodes
+function connectNodes(node1, node2) {
+  // Check if nodes are on different layers
+  if (node1.layer !== node2.layer) {
+    // Create layer change connection
+    node1.connections.push({
+      id: node2.id,
+      layer: node2.layer,
+      flags: ["layerChange"]
+    });
+    
+    node2.connections.push({
+      id: node1.id,
+      layer: node1.layer,
+      flags: ["layerChange"]
+    });
+  } else {
+    // Calculate distance
+    const dx = node1.x - node2.x;
+    const dy = node1.y - node2.y;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    
+    // Normal connection
+    node1.connections.push({
+      id: node2.id,
+      distance: distance
+    });
+    
+    node2.connections.push({
+      id: node1.id,
+      distance: distance
+    });
+  }
+}
+
+// Disconnect two nodes
+function disconnectNodes(node1, node2) {
+  // Remove node2 from node1's connections
+  for (let i = 0; i < node1.connections.length; i++) {
+    if ((node1.connections[i].layer && node1.connections[i].layer === node2.layer && 
+         node1.connections[i].id === node2.id) ||
+        (!node1.connections[i].layer && node1.connections[i].id === node2.id)) {
+      node1.connections.splice(i, 1);
+      break;
+    }
+  }
+  
+  // Remove node1 from node2's connections
+  for (let i = 0; i < node2.connections.length; i++) {
+    if ((node2.connections[i].layer && node2.connections[i].layer === node1.layer && 
+         node2.connections[i].id === node1.id) ||
+        (!node2.connections[i].layer && node2.connections[i].id === node1.id)) {
+      node2.connections.splice(i, 1);
+      break;
+    }
+  }
+}
+
+// Move a node to a new position
+function moveNode(node, x, y) {
+  node.x = x;
+  node.y = y;
+  
+  // Update distances for all connections
+  for (let i = 0; i < node.connections.length; i++) {
+    if (!node.connections[i].layer) {
+      const connectedNode = nodeGraph[node.layer][node.connections[i].id];
+      if (connectedNode) {
+        const dx = node.x - connectedNode.x;
+        const dy = node.y - connectedNode.y;
+        const distance = Math.sqrt(dx*dx + dy*dy);
+        node.connections[i].distance = distance;
+        
+        // Find and update the reverse connection too
+        for (let j = 0; j < connectedNode.connections.length; j++) {
+          if (connectedNode.connections[j].id === node.id) {
+            connectedNode.connections[j].distance = distance;
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Generate nodes for an area
+function generateNodesForArea(area) {
+  if (!area || !area.points || area.points.length < 3) return null;
+  
+  // Calculate centroid
+  const centerX = area.points.reduce((sum, p) => sum + p.x, 0) / area.points.length;
+  const centerY = area.points.reduce((sum, p) => sum + p.y, 0) / area.points.length;
+  
+  // Create a node at the center
+  const node = createNode(area.layer, centerX, centerY, area.type === "elevator" ? "elevator" : 
+                                               area.type === "stairs" ? "stairs" : 
+                                               area.type === "restroom" ? "restroom" : 
+                                               area.type === "entrance" ? "entrance" : "regular");
+  
+  // Set the name if area has one
+  if (area.name) {
+    node.name = area.name;
+    namedNodes[area.layer].push({
+      id: node.id,
+      name: area.name
+    });
+    
+    // Update UI suggestions
+    populateSuggestions();
+  }
+  
+  // Add node to area
+  associateNodeWithArea(node, area);
+  
+  return node;
+}
+
+// Find area at point
+function findAreaAtPoint(x, y, layer = view.layer) {
+  if (!areas[layer]) return null;
+  
+  for (const area of areas[layer]) {
+    if (isPointInPolygon(x, y, area.points)) {
+      return area;
+    }
+  }
+  
+  return null;
+}
+
+// Show area panel
+function showAreaPanel(area) {
+  // Check if panel already exists
+  let areaPanel = document.getElementById("areaPanel");
+  
+  // Create panel if it doesn't exist
+  if (!areaPanel) {
+    areaPanel = document.createElement("div");
+    areaPanel.id = "areaPanel";
+    areaPanel.className = "node-panel";
+    areaPanel.style.right = "10px";
+    areaPanel.style.left = "auto";
+    
+    document.body.appendChild(areaPanel);
+  }
+  
+  // Populate panel
+  areaPanel.innerHTML = `
+    <div class="flex justify-between mb-2">
+      <h3 class="text-sm font-medium">Area Properties</h3>
+      <button id="closeAreaPanel" class="text-xs">×</button>
+    </div>
+    <div class="mb-2">
+      <label for="areaName" class="block text-xs font-medium">Name</label>
+      <input type="text" id="areaName" class="w-full p-1 border rounded text-xs" value="${area.name || ''}">
+    </div>
+    <div class="mb-2">
+      <label for="areaType" class="block text-xs font-medium">Type</label>
+      <select id="areaType" class="w-full p-1 border rounded text-xs">
+        ${Object.keys(areaTypes).map(type => 
+          `<option value="${type}" ${area.type === type ? 'selected' : ''}>${areaTypes[type].name}</option>`
+        ).join('')}
+      </select>
+    </div>
+    <div class="mt-2">
+      <button id="createNodeInArea" class="text-xs p-1 bg-blue-100 rounded border w-full mb-1">Create Node</button>
+      <button id="saveAreaData" class="w-full bg-blue-500 text-white text-xs p-1 rounded">Save</button>
+    </div>
+  `;
+  
+  // Show panel
+  areaPanel.style.display = "block";
+  
+  // Add event listeners
+  document.getElementById("closeAreaPanel").addEventListener("click", () => {
+    areaPanel.style.display = "none";
+  });
+  
+  document.getElementById("saveAreaData").addEventListener("click", () => {
+    // Save area data
+    area.name = document.getElementById("areaName").value;
+    area.type = document.getElementById("areaType").value;
+    
+    // Update any nodes associated with this area
+    if (area.nodes) {
+      for (const nodeId of area.nodes) {
+        const node = nodeGraph[area.layer][nodeId];
+        if (node) {
+          // Update node type based on area type
+          if (area.type === "elevator") node.type = "elevator";
+          else if (area.type === "stairs") node.type = "stairs";
+          else if (area.type === "restroom") node.type = "restroom";
+          else if (area.type === "entrance") node.type = "entrance";
+          
+          // Update node name if it matches area name
+          if (node.name === area.name) {
+            node.name = area.name;
+          }
+        }
+      }
+    }
+    
+    redraw();
+  });
+  
+  document.getElementById("createNodeInArea").addEventListener("click", () => {
+    const node = generateNodesForArea(area);
+    if (node) {
+      console.log("Created node in area:", node);
+      editorSelectedNode = node;
+      showNodePanel(node);
+      redraw();
+    }
+  });
+}
+
+// Auto-connect area nodes
+function autoConnectAreaNodes() {
+  if (!areas[view.layer]) return;
+  
+  // Get all nodes that are in this layer
+  const layerNodes = nodeGraph[view.layer].filter(node => node !== null);
+  
+  // For each area
+  for (const area of areas[view.layer]) {
+    if (!area.nodes || area.nodes.length === 0) continue;
+    
+    // Get nodes in this area
+    const areaNodeIds = area.nodes;
+    const areaNodes = areaNodeIds.map(id => nodeGraph[view.layer][id]).filter(node => node !== null);
+    
+    if (areaNodes.length === 0) continue;
+    
+    // Find nearest node outside the area
+    for (const areaNode of areaNodes) {
+      let nearestNode = null;
+      let minDistance = Infinity;
+      
+      for (const node of layerNodes) {
+        if (areaNodeIds.includes(node.id)) continue; // Skip nodes in this area
+        
+        const dx = areaNode.x - node.x;
+        const dy = areaNode.y - node.y;
+        const distance = Math.sqrt(dx*dx + dy*dy);
+        
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestNode = node;
+        }
+      }
+      
+      // Connect to nearest node if found and not already connected
+      if (nearestNode && minDistance < 200) {
+        // Check if already connected
+        const isConnected = areaNode.connections.some(conn => 
+          conn.id === nearestNode.id && (!conn.layer || conn.layer === nearestNode.layer)
+        );
+        
+        if (!isConnected) {
+          console.log(`Connecting area node ${areaNode.id} to ${nearestNode.id}`);
+          connectNodes(areaNode, nearestNode);
+        }
+      }
+    }
+  }
+}
+
+// Quantize node positions to make the data cleaner
+function quantizeNodePositions() {
+  if (!nodeGraph[view.layer]) return;
+  
+  for (const node of nodeGraph[view.layer]) {
+    if (!node) continue;
+    
+    // Round to nearest 5 pixels
+    node.x = Math.round(node.x / 5) * 5;
+    node.y = Math.round(node.y / 5) * 5;
+  }
+  
+  console.log("Quantized all node positions");
+  redraw();
+}
+
+// Export map data
+function exportMapData() {
+  // Prepare data for export
+  const exportData = {
+    layers: {}
+  };
+  
+  for (const layer of loadedLayers) {
+    if (nodeGraph[layer] && nodeGraph[layer].length > 0) {
+      // Clean up the data by removing nulls
+      const cleanNodes = nodeGraph[layer].filter(node => node !== null);
+      
+      exportData.layers[layer] = {
+        metadata: layerData[layer] || {},
+        nodes: cleanNodes,
+        namedNodes: namedNodes[layer] || [],
+        areas: areas[layer] || []
+      };
+    }
+  }
+  
+  // Convert to JSON
+  const jsonData = JSON.stringify(exportData, null, 2);
+  
+  // Create download link
+  const blob = new Blob([jsonData], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'map_data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log("Map data exported");
+}
+
+// Helper function to populate search suggestions
+function populateSuggestions() {
+  const originSuggestions = document.getElementById("originSuggestions");
+  const destinationSuggestions = document.getElementById("destinationSuggestions");
+  
+  if (!originSuggestions || !destinationSuggestions) return;
+  
+  // Clear existing options
+  originSuggestions.innerHTML = "";
+  destinationSuggestions.innerHTML = "";
+  
+  // Add all named nodes to suggestions
+  for (const layer of loadedLayers) {
+    if (!namedNodes[layer]) continue;
+    
+    for (const namedNode of namedNodes[layer]) {
+      if (!namedNode || !namedNode.name) continue;
+      
+      // Create option elements
+      const originOption = document.createElement("option");
+      originOption.value = namedNode.name;
+      
+      const destinationOption = document.createElement("option");
+      destinationOption.value = namedNode.name;
+      
+      // Add to datalists
+      originSuggestions.appendChild(originOption);
+      destinationSuggestions.appendChild(destinationOption);
+    }
+  }
+  
+  // Add area names to suggestions if they don't already have a node with the same name
+  for (const layer of loadedLayers) {
+    if (!areas[layer]) continue;
+    
+    for (const area of areas[layer]) {
+      if (!area || !area.name) continue;
+      
+      // Check if this name is already in the suggestions
+      let nameExists = false;
+      for (const option of originSuggestions.options) {
+        if (option.value === area.name) {
+          nameExists = true;
+          break;
+        }
+      }
+      
+      if (!nameExists) {
+        // Create option elements
+        const originOption = document.createElement("option");
+        originOption.value = area.name;
+        
+        const destinationOption = document.createElement("option");
+        destinationOption.value = area.name;
+        
+        // Add to datalists
+        originSuggestions.appendChild(originOption);
+        destinationSuggestions.appendChild(destinationOption);
+      }
+    }
+  }
+  
+  console.log("Updated search suggestions");
+}
+
+// Function to get user preferences
+function getUserPreferences() {
+  return {
+    avoidStairs: document.getElementById("avoidStairs")?.checked || false,
+    avoidElevators: document.getElementById("avoidElevators")?.checked || false
+  };
+}
+
+// Check map setup
+function checkMapSetup() {
+  console.log("Checking map setup...");
+  
+  // Check if any layers are loaded
+  if (loadedLayers.length === 0) {
+    console.warn("No layers loaded!");
+    return;
+  }
+  
+  // Log information about loaded layers
+  console.log(`${loadedLayers.length} layers loaded:`);
+  for (const layer of loadedLayers) {
+    const nodeCount = nodeGraph[layer] ? nodeGraph[layer].filter(n => n !== null).length : 0;
+    console.log(`- ${layer}: ${nodeCount} nodes`);
+  }
+  
+  // Populate layer select dropdown
+  const layerSelect = document.getElementById("layerSelect");
+  if (layerSelect) {
+    layerSelect.innerHTML = ""; // Clear existing options
+    for (const layer of loadedLayers) {
+      addLayerToSelect(layer);
+    }
+  }
+  
+  // Set current layer if not already set
+  if (!view.layer || !loadedLayers.includes(view.layer)) {
+    view.layer = loadedLayers[0];
+    console.log(`Set current layer to ${view.layer}`);
+  }
+  
+  // Populate search suggestions
+  populateSuggestions();
 }

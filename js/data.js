@@ -273,17 +273,92 @@ function drawAreaIcon(area, centerX, centerY) {
 // Example: Initialize with some test data if you like
 function initializeTestData() {
   const layers = ['outside', 'floor1', 'floor2'];
+  
+  console.log("Initializing test data...");
+  
   for (const layer of layers) {
     if (!loadedLayers.includes(layer)) {
       loadedLayers.push(layer);
       nodeGraph[layer] = [];
       namedNodes[layer] = [];
       areas[layer] = [];
+      
       layerData[layer] = { 
-        imgScale: 1, 
-        mapImage: `${layer}.png` 
+        name: layer,
+        scale: 1,
+        gridSize: 50,
+        backgroundColor: layer === 'outside' ? '#E8F4E8' : '#F0F0F0'
       };
     }
   }
+  
+  // Force clear existing data to prevent duplicates
+  nodeGraph['outside'] = [];
+  namedNodes['outside'] = [];
+  areas['outside'] = [];
+  
+  console.log("Creating sample nodes for 'outside' layer");
+  
+  // Create some sample nodes near the center of the view
+  const entrance = createNode('outside', 0, 0, 'entrance');
+  entrance.name = "Main Entrance";
+  namedNodes['outside'].push({id: entrance.id, name: entrance.name});
+  
+  const node1 = createNode('outside', 100, 0);
+  const node2 = createNode('outside', 200, 0);
+  const node3 = createNode('outside', 200, 100);
+  const node4 = createNode('outside', 100, 100);
+  
+  const stairs = createNode('outside', 150, 50, 'stairs');
+  stairs.name = "Stairs to Floor 1";
+  namedNodes['outside'].push({id: stairs.id, name: stairs.name});
+  
+  // Connect the nodes
+  console.log("Connecting nodes...");
+  connectNodes(entrance, node1);
+  connectNodes(node1, node2);
+  connectNodes(node2, node3);
+  connectNodes(node3, node4);
+  connectNodes(node4, node1);
+  connectNodes(node1, stairs);
+  connectNodes(node4, stairs);
+  
+  // Create a sample area
+  const officePoints = [
+    {x: 80, y: -20},
+    {x: 220, y: -20},
+    {x: 220, y: 120},
+    {x: 80, y: 120}
+  ];
+  
+  console.log("Creating sample area...");
+  const officeArea = createArea('outside', 'Office Area', 'office', officePoints);
+  
+  // Add a node on floor 1 and connect to stairs
+  const floor1Node = createNode('floor1', 150, 50);
+  floor1Node.name = "Floor 1 Landing";
+  namedNodes['floor1'].push({id: floor1Node.id, name: floor1Node.name});
+  
+  // Connect stairs to floor 1
+  const stairsConnection = {
+    id: floor1Node.id,
+    layer: 'floor1',
+    flags: ['layerChange', 'stairs']
+  };
+  
+  stairs.connections.push(stairsConnection);
+  
+  // Add reverse connection
+  const reverseStairsConnection = {
+    id: stairs.id,
+    layer: 'outside',
+    flags: ['layerChange', 'stairs']
+  };
+  
+  floor1Node.connections.push(reverseStairsConnection);
+  
+  console.log("Test data initialized.");
+  console.log("outside layer has", nodeGraph['outside'].length, "nodes");
+  console.log("outside layer has", areas['outside'].length, "areas");
 }
 

@@ -381,3 +381,162 @@ body {
   padding: 8px;
   font-size: 12px;
 }
+
+/* Editor button active state */
+.editor-buttons button.active {
+  background-color: #dbeafe;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  font-weight: bold;
+}
+
+/* Area panel styles */
+.area-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 999;
+  width: 200px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+/* Area dialog styles */
+.area-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+.area-dialog h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #333;
+}
+
+.area-dialog div {
+  margin-bottom: 10px;
+}
+
+.area-dialog label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #555;
+}
+
+.area-dialog input[type="text"],
+.area-dialog select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.area-dialog .buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.area-dialog button {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.area-dialog button#save-area {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #2563eb;
+}
+
+/* Layer change modal styles */
+.layer-change-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+.layer-change-modal h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #333;
+}
+
+.layer-change-modal label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #555;
+}
+
+.layer-change-modal select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Table styles for connections list */
+.connections-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.connections-table th {
+  background-color: #f3f4f6;
+  text-align: left;
+  padding: 4px;
+  font-weight: 600;
+}
+
+.connections-table td {
+  padding: 3px 4px;
+  border-top: 1px solid #eee;
+}
+
+/* Canvas with pointer cursor for interactive elements */
+#overlay {
+  cursor: pointer;
+}
+
+/* Enhanced button styles */
+button {
+  transition: all 0.2s;
+}
+
+button:hover {
+  filter: brightness(0.95);
+}
+
+button:active {
+  transform: translateY(1px);
+}
