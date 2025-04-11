@@ -1,103 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>TXST Navigation</title>
-	<link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TXST Navigation</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body style="user-select:none;">
-	<div id="mapImgContainer">
-		<img id="mainMapImg" src="map_images/outside.png" class="fixed_position" style="z-index:-2; object-fit:cover;transform-origin: 0% 0%;">
-	</div>
-	<canvas id="overlay" class="fixed_position" style="z-index:-1;"></canvas>
-	
-	<span id="routePanel" class="ui_panel">
-		<table>
-			<tr>
-				<td>
-					<p>TXST Campus Navigation</p>
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<label for="origin" align="right">From:</label>
-				</td>
-				<td>
-					<input type="text" id="origin">
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<label for="destination" align="right">To:</label>
-				</td>
-				<td>
-					<input type="text" id="destination">
-				</td>
-			</tr>
-		</table>
-		<button id="go_button">Go</button>
-		
-		<!-- Accessibility options -->
-		<div class="accessibility-options">
-			<div class="option">
-				<input type="checkbox" id="avoidStairs" name="avoidStairs">
-				<label for="avoidStairs">Stairs</label>
-			</div>
-			<div class="option">
-				<input type="checkbox" id="avoidElevators" name="avoidElevators">
-				<label for="avoidElevators">Elevator</label>
-			</div>
-		</div>
-	</span>
-	<br>
-	<span id="editorTools" style="display:none;">
-		<select id="layerSelect">
-		</select>
-		<br>
-		<span style="pointer-events: none;">
-			<p id="editorMode">Editor Mode: None</p>
-			<b>== Editor Modes ==</b>
-			<p>[A] Add</p>
-			<p>[M] Move</p>
-			<p>[E] Edit</p>
-			<p>[C] Connect</p>
-			<p>[Esc] None</p>
-			<b>== Other Hotkeys ==</b>
-			<p>[D] Toggle drawing nodes</p>
-			<p>[P] Print layer to console</p>
-			<p>[Backspace] Delete selected node</p>
-			<p>[Delete] Delete selected node</p>
-		</span>
-	</span>
-	
-	<!-- Node metadata panel -->
-	<span id="nodePanel" class="ui_panel" style="display:none; position:absolute; top:0px; right:0px">
-		<p>Node Metadata</p>
-		<hr>
-		<label for="nodeName">Room Name</label>
-		<input type="text" id="nodeName">
-		<hr>
-		<p>Flags:</p>
-		<input type="checkbox" id="isStairs">
-		<label for="isStairs">Stairs</label>
-		<br>
-		<input type="checkbox" id="isElevator">
-		<label for="isElevator">Elevator</label>
-		<hr>
-		<p>Connections:</p>
-		<div id="nodeConnections">
-		</div>
-		<hr>
-		<button id="addLayerChangeConnection">Add Layer Change Connection</button>
-	</span>
+  <div id="mainMapImg" class="fixed_position" style="z-index:-3;">
+  </div>
+  <canvas id="overlay" class="fixed_position" style="z-index:1;"></canvas>
+  
+  <div class="flex h-screen bg-gray-100">
+    <!-- Left panel - Controls -->
+    <div id="routePanel" class="ui_panel">
+      <h1 class="text-xl font-bold mb-4 flex items-center">
+        <span class="mr-2">🗺️</span>
+        TXST Navigation
+      </h1>
+      
+      <div class="mb-4">
+        <label for="origin" class="block text-sm font-medium mb-1">From:</label>
+        <input 
+          type="text" 
+          id="origin" 
+          class="w-full p-2 border rounded" 
+          list="originSuggestions"
+          placeholder="Enter starting point"
+        />
+        <datalist id="originSuggestions"></datalist>
+      </div>
+      
+      <div class="mb-4">
+        <label for="destination" class="block text-sm font-medium mb-1">To:</label>
+        <input 
+          type="text" 
+          id="destination" 
+          class="w-full p-2 border rounded"
+          list="destinationSuggestions"
+          placeholder="Enter destination"
+        />
+        <datalist id="destinationSuggestions"></datalist>
+      </div>
+      
+      <button 
+        id="go_button" 
+        class="w-full bg-blue-600 text-white p-2 rounded font-medium flex items-center justify-center"
+      >
+        <svg width="16" height="16" fill="white" style="margin-right: 6px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 2c-4.4 0-8 3.6-8 8 0 5.4 7 11.5 7.3 11.8.2.1.5.2.7.2.2 0 .5-.1.7-.2.3-.3 7.3-6.4 7.3-11.8 0-4.4-3.6-8-8-8zm0 17.7c-2.1-2-6-6.3-6-9.7 0-3.3 2.7-6 6-6s6 2.7 6 6c0 3.4-3.9 7.7-6 9.7z"/>
+          <path d="M12 6c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+        </svg>
+        Find Route
+      </button>
+      
+      <div class="mt-4">
+        <div class="flex items-center mb-2">
+          <input type="checkbox" id="avoidStairs" class="mr-2" />
+          <label for="avoidStairs" class="text-sm">Avoid Stairs</label>
+        </div>
+        <div class="flex items-center">
+          <input type="checkbox" id="avoidElevators" class="mr-2" />
+          <label for="avoidElevators" class="text-sm">Avoid Elevators</label>
+        </div>
+      </div>
+      
+      <div class="mb-4 mt-4">
+        <label for="layerSelect" class="block text-sm font-medium mb-1">Current Floor:</label>
+        <select 
+          id="layerSelect" 
+          class="w-full p-2 border rounded"
+        ></select>
+      </div>
+      
+      <div class="mt-6">
+        <button 
+          id="toggleEditor" 
+          class="text-sm text-blue-600 underline"
+        >
+          Show Editor Tools
+        </button>
+        
+        <div id="editorTools" style="display:none;" class="mt-2 p-2 bg-gray-100 rounded text-sm">
+          <p id="editorMode" class="font-medium mb-2">Editor Mode: None</p>
+          <div class="editor-buttons grid grid-cols-2 gap-1 mb-2">
+            <button data-mode="add" class="p-1 rounded border text-xs">Add Node</button>
+            <button data-mode="polygon" class="p-1 rounded border text-xs">Add Area</button>
+            <button data-mode="edit" class="p-1 rounded border text-xs">Edit</button>
+            <button data-mode="connect" class="p-1 rounded border text-xs">Connect</button>
+          </div>
+          <button 
+            id="saveAreaButton"
+            style="display:none;" 
+            class="w-full mb-2 p-1 bg-green-100 rounded border border-green-300 text-xs text-green-700"
+          >
+            Save Current Area
+          </button>
+  
+          <button 
+            onclick="setEditorMode('none')" 
+            class="w-full p-1 bg-red-100 rounded border border-red-300 text-xs text-red-700"
+          >
+            Exit Editor Mode
+          </button>
+          
+          <!-- Area type selector for Add Area mode -->
+          <div id="areaTypeContainer" class="mt-2" style="display:none;">
+            <label class="block text-xs font-medium mb-1">Area Type:</label>
+            <select id="areaType" class="w-full p-1 text-xs border rounded">
+              <option value="classroom">Classroom</option>
+              <option value="office">Office</option>
+              <option value="hallway">Hallway</option>
+              <option value="elevator">Elevator</option>
+              <option value="stairs">Stairs</option>
+              <option value="entrance">Entrance</option>
+              <option value="restroom">Restroom</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Legend -->
+      <div id="legendPanel" class="mt-4 p-2 bg-gray-50 rounded border">
+        <p class="text-xs font-medium mb-2">Map Legend</p>
+        <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-blue-200 mr-1"></div>
+            <span>Classroom</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-green-200 mr-1"></div>
+            <span>Office</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-pink-200 mr-1"></div>
+            <span>Elevator</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-orange-200 mr-1"></div>
+            <span>Stairs</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-gray-200 mr-1"></div>
+            <span>Hallway</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-blue-300 mr-1"></div>
+            <span>Entrance</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main map area -->
+    <div class="flex-1 relative overflow-hidden">
+      <!-- Map controls -->
+      <div id="mapControls" class="absolute top-4 right-4 bg-white shadow rounded p-2 flex flex-col">
+        <button id="zoomIn" class="p-2 hover:bg-gray-100 rounded">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+        </button>
+        <button id="zoomOut" class="p-2 hover:bg-gray-100 rounded">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Node panel (for editing) -->
+      <div id="nodePanel" class="node-panel" style="display:none;">
+        <div class="flex justify-between mb-2">
+          <h3 class="text-sm font-medium">Node Properties</h3>
+          <button id="closeNodePanel" class="text-xs">×</button>
+        </div>
+        <div class="mb-2">
+          <label for="nodeName" class="block text-xs font-medium">Name</label>
+          <input type="text" id="nodeName" class="w-full p-1 border rounded text-xs">
+        </div>
+        <div class="grid grid-cols-2 gap-1 mb-2">
+          <div>
+            <label for="nodeX" class="block text-xs font-medium">X</label>
+            <input type="number" id="nodeX" class="w-full p-1 border rounded text-xs">
+          </div>
+          <div>
+            <label for="nodeY" class="block text-xs font-medium">Y</label>
+            <input type="number" id="nodeY" class="w-full p-1 border rounded text-xs">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label for="nodeType" class="block text-xs font-medium">Type</label>
+          <select id="nodeType" class="w-full p-1 border rounded text-xs">
+            <option value="regular">Regular</option>
+            <option value="entrance">Entrance</option>
+            <option value="elevator">Elevator</option>
+            <option value="stairs">Stairs</option>
+            <option value="restroom">Restroom</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="block text-xs font-medium">Connections</label>
+          <div id="nodeConnections" class="text-xs"></div>
+        </div>
+        <button id="saveNodeData" class="w-full bg-blue-500 text-white text-xs p-1 rounded">Save</button>
+      </div>
+      
+      <!-- Instruction panel -->
+      <div id="instructionPanel" class="instruction-panel" style="display:none;">
+        <div class="instruction-main"></div>
+        <div class="instruction-detail text-xs"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scripts in correct order at bottom -->
+  <script src="js/data.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/pathfinding.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
 
-	<!-- Load modular JavaScript files -->
-	<script src="js/utils.js"></script>
-	<script src="js/data.js"></script>
-	<script src="js/pathfinding.js"></script>
-	<script src="js/ui.js"></script>
-	<script src="js/editor.js"></script>
-	<script src="js/main.js"></script>
-</body>
+  <div id="debugPanel" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px;">
+    <div>Layer: <span id="debug-layer"></span></div>
+    <div>Nodes: <span id="debug-nodes"></span></div>
+    <div>View: <span id="debug-view"></span></div>
+    <div>Mode: <span id="debug-mode"></span></div>
+    <button onclick="centerView()">Center View</button>
+    <button onclick="toggleDebugInfo()">Toggle Node IDs</button>
+    <button onclick="createTestNode()">Create Test Node</button>
+  </div>
+  
+  <script>
+  // Debug helper functions
+  function updateDebugInfo() {
+    document.getElementById('debug-layer').textContent = view.layer;
+    document.getElementById('debug-nodes').textContent = 
+      nodeGraph[view.layer] ? nodeGraph[view.layer].filter(n => n !== null).length : 0;
+    document.getElementById('debug-view').textContent = 
+      `x:${Math.round(view.x)}, y:${Math.round(view.y)}, zoom:${view.zoom.toFixed(1)}`;
+    document.getElementById('debug-mode').textContent = editorMode;
+  }
+  
+  function centerView() {
+    view.x = 0;
+    view.y = 0;
+    view.zoom = 1;
+    redraw();
+    updateDebugInfo();
+  }
+  
+  let showDebugInfo = false;
+  function toggleDebugInfo() {
+    showDebugInfo = !showDebugInfo;
+    redraw();
+  }
+  
+  // Call this at the end of redraw function
+  function drawNodeDebugInfo() {
+    if (!showDebugInfo) return;
+    
+    ctx.font = "10px Arial";
+    ctx.fillStyle = "#000";
+    
+    for (let i = 0; i < nodeGraph[view.layer].length; i++) {
+      if (!nodeGraph[view.layer][i]) continue;
+      
+      const node = nodeGraph[view.layer][i];
+      const [x, y] = posToCanvasPos(node.x, node.y);
+      
+      ctx.fillText(`ID:${node.id}`, x + 10, y);
+    }
+  }
+
+  function createTestNode() {
+    const node = createNode(view.layer, 0, 0);
+    node.name = "Test Node";
+    namedNodes[view.layer].push({id: node.id, name: node.name});
+    console.log("Created test node:", node);
+    redraw();
+   updateDebugInfo();
+  }
+  
+  // Update debug info every second
+  setInterval(updateDebugInfo, 1000);
+  </script>
 </html>
