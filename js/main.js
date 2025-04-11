@@ -30,6 +30,8 @@ function init() {
     
     // Set up event listeners
     setupEventListeners();
+
+    setupSaveAreaButtonListener();
     
     // Enable drawing by default
     drawNodes = true;
@@ -103,6 +105,32 @@ function setupEditorButtonListeners() {
       });
   }
 }
+
+function setupSaveAreaButtonListener() {
+    const saveAreaButton = document.getElementById("saveAreaButton");
+    if (saveAreaButton) {
+      saveAreaButton.addEventListener("click", function() {
+        if (isDrawingPolygon && polygonPoints.length >= 3) {
+          console.log("Completing polygon with", polygonPoints.length, "points");
+          isDrawingPolygon = false;
+          showAreaPropertiesDialog(function(properties) {
+            const area = createArea(view.layer, properties.name, properties.type, polygonPoints);
+            if (properties.createNode) {
+              generateNodesForArea(area);
+            }
+            console.log("Created new area:", area);
+            polygonPoints = [];
+            // Hide the save button after saving
+            saveAreaButton.style.display = "none";
+            redraw();
+            populateSuggestions();
+          });
+        } else {
+          alert("You need at least 3 points to create an area.");
+        }
+      });
+    }
+  }
 
 
 // Call init when the page loads

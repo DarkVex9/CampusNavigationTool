@@ -312,6 +312,9 @@ function handleMouseUp(event) {
 
 // Handle mouse move events
 function handleMouseMove(event) {
+
+  updateSaveAreaButtonVisibility();
+
   if (isDragging) {
     if (editorMode === "move" && editorSelectedNode) {
       // Move the selected node
@@ -380,7 +383,7 @@ function handleMouseMove(event) {
 }
 
 // Handle double click for completing polygons
-function handleDoubleClick(event) {
+/* function handleDoubleClick(event) {
   if (editorMode === "polygon" && isDrawingPolygon && polygonPoints.length >= 3) {
     console.log("Completing polygon with", polygonPoints.length, "points");
     isDrawingPolygon = false;
@@ -395,7 +398,7 @@ function handleDoubleClick(event) {
       populateSuggestions();
     });
   }
-}
+} */
 
 // Handle scroll events for zooming
 function handleScroll(event) {
@@ -495,6 +498,12 @@ function setEditorMode(mode) {
   if (areaTypeContainer) {
     areaTypeContainer.style.display = (mode === "polygon") ? "block" : "none";
   }
+
+  // Toggle save area button visibility
+  const saveAreaButton = document.getElementById("saveAreaButton");
+  if (saveAreaButton) {
+    saveAreaButton.style.display = (mode === "polygon") ? "block" : "none";
+  }
   
   // Update button states
   const buttons = document.querySelectorAll(".editor-buttons button");
@@ -524,6 +533,13 @@ function setEditorMode(mode) {
   
   // Refresh display
   redraw();
+}
+
+function updateSaveAreaButtonVisibility() {
+  const saveAreaButton = document.getElementById("saveAreaButton");
+  if (saveAreaButton && editorMode === "polygon" && isDrawingPolygon) {
+    saveAreaButton.style.display = (polygonPoints.length >= 3) ? "block" : "none";
+  }
 }
 
 // Create a node
