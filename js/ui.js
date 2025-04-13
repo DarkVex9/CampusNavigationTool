@@ -146,6 +146,9 @@ function redraw() {
       ctx.fillStyle = "#F0F0F0"; // Default background color
       ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+
+  // Draw background image if present
+  drawBackgroundImage();
   
   // Draw grid lines for reference
   drawGridLines();
@@ -755,11 +758,43 @@ if (saveNodeDataBtn) {
   });
 }
 
-// Add double-click event listener only if canvas exists
-if (canvas) {
-  canvas.addEventListener('dblclick', handleDoubleClick);
-} else {
-  console.warn("Canvas element not found for dblclick listener");
+function drawBackgroundImage() {
+  if (!backgroundImages[view.layer]) return;
+  
+  const bgData = backgroundImages[view.layer];
+  
+  // Apply opacity
+  ctx.globalAlpha = bgData.opacity;
+  
+  // Calculate position on canvas
+  const [canvasX, canvasY] = posToCanvasPos(bgData.x, bgData.y);
+  const width = bgData.width * view.zoom;
+  const height = bgData.height * view.zoom;
+  
+  // Draw the image
+  ctx.drawImage(bgData.image, canvasX, canvasY, width, height);
+  
+  // Reset opacity
+  ctx.globalAlpha = 1.0;
+}
+
+// Update background image UI
+function updateBackgroundImageUI() {
+  const bgControls = document.getElementById('backgroundControls');
+  const hasImage = !!backgroundImages[view.layer];
+  
+  if (bgControls) {
+    // Show/hide controls based on whether there's an image
+    document.getElementById('backgroundControls').style.display = hasImage ? 'block' : 'none';
+    
+    if (hasImage) {
+      // Update opacity slider
+      const opacitySlider = document.getElementById('bgOpacity');
+      if (opacitySlider) {
+        opacitySlider.value = backgroundImages[view.layer].opacity * 100;
+      }
+    }
+  }
 }
 
 // Initialize drawing mode
