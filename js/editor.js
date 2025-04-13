@@ -9,6 +9,8 @@ var editorSelectedArea;
 var editorMoveRange = 500; // Max range that the move tool can grab a node from
 var tempConnectingNode;
 var tempIsHintDrawn = false;
+let rectStartPos = null;
+let rectEndPos = null;
 
 // Handle key press events
 function handleKeyPress(event) {
@@ -258,13 +260,9 @@ function handleMouseDown(event) {
       // Redraw to show the new node
       redraw();
     } else if (editorMode === "polygon") {
-      if (isDrawingPolygon) {
-        const worldPos = canvasPosToPos(event.pageX, event.pageY);
-        console.log("Adding polygon point at:", worldPos);
-        polygonPoints.push({ x: worldPos[0], y: worldPos[1] });
-        redraw();
-        drawPolygonInProgress();
-      }
+      rectStartPos = canvasPosToPos(event.pageX, event.pageY);
+      rectEndPos = null;
+      isDrawingPolygon = true;
     } else if (editorMode === "area") {
       // Select an area when in area mode
       const worldPos = canvasPosToPos(event.pageX, event.pageY);
@@ -291,20 +289,32 @@ function handleMouseUp(event) {
     return; // Only handle left clicks
   }
   
-  if (editorMode === "connect" && editorSelectedNode) {
-    const worldPos = canvasPosToPos(event.pageX, event.pageY);
-    let node2 = findNearestNode(worldPos[0], worldPos[1]);
-    
-    if (node2 && editorSelectedNode !== node2) {
-      if (editorSelectedNode.connections.some(c => c.id === node2.id)) {
-        console.log("Disconnected Nodes", editorSelectedNode, node2);
-        disconnectNodes(editorSelectedNode, node2);
-      } else {
-        console.log("Connected Nodes", editorSelectedNode, node2);
-        connectNodes(editorSelectedNode, node2);
+  if (editorMode === "polygon" && isDrawingPolygon && rectStartPos && rectEndPos) {
+    const x1 = rectStartPos[0];
+    const y1 = rectStartPos[1];
+    const x2 = rectEndPos[0];
+    const y2 = rectEndPos[1];
+  
+    const points = [
+      { x: Math.min(x1, x2), y: Math.min(y1, y2) },
+      { x: Math.max(x1, x2), y: Math.min(y1, y2) },
+      { x: Math.max(x1, x2), y: Math.max(y1, y2) },
+      { x: Math.min(x1, x2), y: Math.max(y1, y2) }
+    ];
+  
+    isDrawingPolygon = false;
+    rectStartPos = null;
+    rectEndPos = null;
+  
+    showAreaPropertiesDialog(function(properties) {
+      const area = createArea(view.layer, properties.name, properties.type, points);
+      if (properties.createNode) {
+        generateNodesForArea(area);
       }
+      console.log("Created new area:", area);
       redraw();
-    }
+      populateSuggestions();
+    });
   }
   
   isDragging = false;
@@ -336,18 +346,10 @@ function handleMouseMove(event) {
         ctx.lineTo(...posToCanvasPos(node2.x, node2.y));
         ctx.stroke();
       }
-    } else if (editorMode === "polygon" && isDrawingPolygon && polygonPoints.length > 0) {
-      // Draw rubber-band line from last point to cursor
+    } else if (editorMode === "polygon" && isDrawingPolygon && rectStartPos) {
+      rectEndPos = canvasPosToPos(event.pageX, event.pageY);
       redraw();
-      drawPolygonInProgress();
-      
-      const lastPoint = polygonPoints[polygonPoints.length - 1];
-      ctx.strokeStyle = "#42F5C2";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(...posToCanvasPos(lastPoint.x, lastPoint.y));
-      ctx.lineTo(event.pageX, event.pageY);
-      ctx.stroke();
+      drawRectanglePreview(rectStartPos, rectEndPos);
     } else {
       // Pan the view
       view.x += event.movementX / view.zoom;
@@ -1018,4 +1020,24 @@ function checkMapSetup() {
   
   // Populate search suggestions
   populateSuggestions();
+}
+
+function drawRectanglePreview(start, end) {
+  if (!start || !end) return;
+  ctx.strokeStyle = "#42F5C2";
+  ctx.fillStyle = "rgba(66, 245, 194, 0.3)";
+  ctx.lineWidth = 2;
+
+  const [x1, y1] = posToCanvasPos(start[0], start[1]);
+  const [x2, y2] = posToCanvasPos(end[0], end[1]);
+
+  const left = Math.min(x1, x2);
+  const right = Math.max(x1, x2);
+  const top = Math.min(y1, y2);
+  const bottom = Math.max(y1, y2);
+
+  ctx.beginPath();
+  ctx.rect(left, top, right - left, bottom - top);
+  ctx.fill();
+  ctx.stroke();
 }
