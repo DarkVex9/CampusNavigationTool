@@ -66,6 +66,7 @@ function setupEventListeners() {
       layerSelect.addEventListener("change", function() {
           view.layer = this.value;
           console.log("Layer changed to:", view.layer);
+          updateBackgroundImageUI(); // Add this line
           redraw();
       });
   }
@@ -195,6 +196,7 @@ document.getElementById('uploadBgImage').addEventListener('change', async functi
 
 document.getElementById('bgOpacity').addEventListener('input', function() {
   const opacity = parseInt(this.value) / 100;
+  document.getElementById('opacityValue').textContent = this.value; // Add this line
   if (backgroundImages[view.layer]) {
     backgroundImages[view.layer].opacity = opacity;
     redraw();

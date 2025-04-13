@@ -774,6 +774,22 @@ function drawBackgroundImage() {
   // Draw the image
   ctx.drawImage(bgData.image, canvasX, canvasY, width, height);
   
+  // Draw a border around the image if in bgmove mode
+  if (editorMode === "bgmove") {
+    ctx.globalAlpha = 1.0;
+    ctx.strokeStyle = "#3b82f6"; // Blue border
+    ctx.lineWidth = 2;
+    ctx.strokeRect(canvasX, canvasY, width, height);
+    
+    // Draw handles at corners
+    const handleSize = 8;
+    ctx.fillStyle = "#3b82f6";
+    ctx.fillRect(canvasX - handleSize/2, canvasY - handleSize/2, handleSize, handleSize);
+    ctx.fillRect(canvasX + width - handleSize/2, canvasY - handleSize/2, handleSize, handleSize);
+    ctx.fillRect(canvasX - handleSize/2, canvasY + height - handleSize/2, handleSize, handleSize);
+    ctx.fillRect(canvasX + width - handleSize/2, canvasY + height - handleSize/2, handleSize, handleSize);
+  }
+  
   // Reset opacity
   ctx.globalAlpha = 1.0;
 }

@@ -11,6 +11,9 @@ var tempConnectingNode;
 var tempIsHintDrawn = false;
 let rectStartPos = null;
 let rectEndPos = null;
+var isDraggingBgImage = false;
+var bgImageDragStartX = 0;
+var bgImageDragStartY = 0;
 
 // Handle key press events
 function handleKeyPress(event) {
@@ -202,6 +205,15 @@ function handleMouseDown(event) {
   }
   
   if (event.target === canvas || event.target === document.body || event.target.tagName === "IMG") {
+    // Add this new condition for background image dragging
+    if (editorMode === "bgmove" && backgroundImages[view.layer]) {
+      isDraggingBgImage = true;
+      bgImageDragStartX = event.pageX;
+      bgImageDragStartY = event.pageY;
+      canvas.style.cursor = "move";
+      return; // Stop processing further
+    }
+    
     if (editorMode === "none") {
       // Start panning
       isDragging = true;
@@ -289,6 +301,17 @@ function handleMouseUp(event) {
     return; // Only handle left clicks
   }
   
+  // Add this new condition for background image dragging
+  if (isDraggingBgImage) {
+    isDraggingBgImage = false;
+    if (editorMode === "bgmove") {
+      canvas.style.cursor = "move"; // Keep move cursor in bgmove mode
+    } else {
+      canvas.style.cursor = "default";
+    }
+    return;
+  }
+  
   if (editorMode === "polygon" && isDrawingPolygon && rectStartPos && rectEndPos) {
     const x1 = rectStartPos[0];
     const y1 = rectStartPos[1];
@@ -317,11 +340,45 @@ function handleMouseUp(event) {
     });
   }
   
+  if (editorMode === "connect" && editorSelectedNode) {
+    const worldPos = canvasPosToPos(event.pageX, event.pageY);
+    let node2 = findNearestNode(worldPos[0], worldPos[1]);
+    
+    if (node2 && editorSelectedNode !== node2) {
+      if (editorSelectedNode.connections.some(c => c.id === node2.id)) {
+        console.log("Disconnected Nodes", editorSelectedNode, node2);
+        disconnectNodes(editorSelectedNode, node2);
+      } else {
+        console.log("Connected Nodes", editorSelectedNode, node2);
+        connectNodes(editorSelectedNode, node2);
+      }
+      redraw();
+    }
+  }
+  
   isDragging = false;
 }
 
+
 // Handle mouse move events
 function handleMouseMove(event) {
+  // Add this new condition for background image dragging
+  if (isDraggingBgImage && backgroundImages[view.layer]) {
+    const deltaX = (event.pageX - bgImageDragStartX) / view.zoom;
+    const deltaY = (event.pageY - bgImageDragStartY) / view.zoom;
+    
+    // Update background image position
+    backgroundImages[view.layer].x += deltaX;
+    backgroundImages[view.layer].y += deltaY;
+    
+    // Update drag start position
+    bgImageDragStartX = event.pageX;
+    bgImageDragStartY = event.pageY;
+    
+    // Redraw
+    redraw();
+    return; // Stop processing further
+  }
 
   updateSaveAreaButtonVisibility();
 
@@ -494,6 +551,19 @@ function setEditorMode(mode) {
   // Update UI to reflect current mode
   document.getElementById("editorMode").textContent = "Editor Mode: " + 
     mode.charAt(0).toUpperCase() + mode.slice(1);
+  
+  // Add this new condition for background image mode
+  if (mode === "bgmove") {
+    // Set cursor to move if there's a background image
+    if (backgroundImages[view.layer]) {
+      canvas.style.cursor = "move";
+    } else {
+      canvas.style.cursor = "default";
+      alert("No background image in the current layer.");
+    }
+  } else {
+    canvas.style.cursor = "default";
+  }
   
   // Toggle area type selector visibility
   const areaTypeContainer = document.getElementById("areaTypeContainer");
