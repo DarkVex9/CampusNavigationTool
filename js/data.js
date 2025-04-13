@@ -11,6 +11,7 @@ var areas = {};          // Each loaded layer is a property containing an array 
 var currentPath;         // Stores currently drawn path if there is one
 var polygonPoints = [];  // Points for polygon drawing
 var isDrawingPolygon = false; // Flag for polygon drawing state
+var backgroundImages = {}; // Store background images for each layer
 
 // Area types with colors and properties
 const areaTypes = {
@@ -362,3 +363,25 @@ function initializeTestData() {
   console.log("outside layer has", areas['outside'].length, "areas");
 }
 
+function loadBackgroundImage(layer, imageUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = function() {
+      backgroundImages[layer] = {
+        image: img,
+        width: img.width,
+        height: img.height,
+        x: 0, // Default position
+        y: 0,
+        opacity: 0.5 // Default opacity
+      };
+      console.log(`Background image loaded for layer ${layer}:`, img.width, "x", img.height);
+      resolve(img);
+    };
+    img.onerror = function() {
+      console.error(`Failed to load background image for layer ${layer}`);
+      reject(new Error(`Failed to load image: ${imageUrl}`));
+    };
+    img.src = imageUrl;
+  });
+}

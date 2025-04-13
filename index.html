@@ -6,6 +6,8 @@
   <title>TXST Navigation</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
+
 <body style="user-select:none;">
   <div id="mainMapImg" class="fixed_position" style="z-index:-3;">
   </div>
@@ -88,6 +90,7 @@
             <button data-mode="polygon" class="p-1 rounded border text-xs">Add Area</button>
             <button data-mode="edit" class="p-1 rounded border text-xs">Edit</button>
             <button data-mode="connect" class="p-1 rounded border text-xs">Connect</button>
+            <button data-mode="bgmove" class="p-1 rounded border text-xs">Move Background</button>
           </div>
           <button 
             id="saveAreaButton"
@@ -104,21 +107,54 @@
             Exit Editor Mode
           </button>
           
-          <!-- Area type selector for Add Area mode -->
-          <div id="areaTypeContainer" class="mt-2" style="display:none;">
-            <label class="block text-xs font-medium mb-1">Area Type:</label>
-            <select id="areaType" class="w-full p-1 text-xs border rounded">
-              <option value="classroom">Classroom</option>
-              <option value="office">Office</option>
-              <option value="hallway">Hallway</option>
-              <option value="elevator">Elevator</option>
-              <option value="stairs">Stairs</option>
-              <option value="entrance">Entrance</option>
-              <option value="restroom">Restroom</option>
-            </select>
-          </div>
         </div>
       </div>
+
+      <!-- Background Image Controls -->
+    <div id="backgroundSection" class="mt-6">
+      <h3 class="text-sm font-medium mb-2">Background Image</h3>
+  
+      <div class="mb-2">
+        <label for="uploadBgImage" class="block text-xs font-medium mb-1">Upload Image:</label>
+        <input type="file" id="uploadBgImage" accept="image/*" class="w-full text-xs">
+     </div>
+  
+      <div id="backgroundControls" style="display:none;">
+        <div class="mb-2">
+          <label for="bgOpacity" class="block text-xs font-medium mb-1">Opacity: <span id="opacityValue">50</span>%</label>
+          <input type="range" id="bgOpacity" min="10" max="100" value="50" class="w-full">
+        </div>
+    
+        <button id="centerBgImage" class="w-full p-1 bg-gray-200 rounded border border-gray-300 text-xs">
+          Center Image
+        </button>
+      </div>
+    </div>
+
+    <!-- Save/Load Controls -->
+    <div class="mt-6">
+      <h3 class="text-sm font-medium mb-2">Save & Load</h3>
+    
+      <div class="grid grid-cols-2 gap-2 mb-2">
+        <button id="saveMap" class="w-full p-1 rounded border bg-blue-100 border-blue-300 text-xs">
+          Save Map
+        </button>
+        <button id="loadSavedMap" class="w-full p-1 rounded border bg-blue-100 border-blue-300 text-xs">
+          Load Saved
+        </button>
+      </div>
+    
+      <div class="mb-2">
+        <button id="exportMap" class="w-full p-1 rounded border bg-green-100 border-green-300 text-xs">
+          Export
+        </button>
+      </div>
+      
+      <div class="mb-2">
+        <p class="block w-full p-1 text-center text-xs font-medium mb-1">Import Map (JSON File)</p>
+        <input type="file" id="importMap" accept="application/json" class="w-full text-xs">
+      </div>
+    </div>
       
       <!-- Legend -->
       <div id="legendPanel" class="mt-4 p-2 bg-gray-50 rounded border">
@@ -224,6 +260,24 @@
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const label = document.querySelector('label[for="importMap"]');
+      const fileInput = document.getElementById('importMap');
+  
+      if (label && fileInput) {
+        label.addEventListener('click', () => fileInput.click());
+  
+        fileInput.addEventListener('change', () => {
+          if (fileInput.files.length > 0) {
+            const fileName = fileInput.files[0].name;
+            label.textContent = `Import (${fileName})`;
+          }
+        });
+      }
+    });
+  </script>
+
   <div id="debugPanel" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px;">
     <div>Layer: <span id="debug-layer"></span></div>
     <div>Nodes: <span id="debug-nodes"></span></div>
@@ -287,5 +341,6 @@
   
   // Update debug info every second
   setInterval(updateDebugInfo, 1000);
+
   </script>
 </html>

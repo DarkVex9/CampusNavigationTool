@@ -9,6 +9,11 @@ var editorSelectedArea;
 var editorMoveRange = 500; // Max range that the move tool can grab a node from
 var tempConnectingNode;
 var tempIsHintDrawn = false;
+let rectStartPos = null;
+let rectEndPos = null;
+var isDraggingBgImage = false;
+var bgImageDragStartX = 0;
+var bgImageDragStartY = 0;
 
 // Handle key press events
 function handleKeyPress(event) {
@@ -200,6 +205,15 @@ function handleMouseDown(event) {
   }
   
   if (event.target === canvas || event.target === document.body || event.target.tagName === "IMG") {
+    // Add this new condition for background image dragging
+    if (editorMode === "bgmove" && backgroundImages[view.layer]) {
+      isDraggingBgImage = true;
+      bgImageDragStartX = event.pageX;
+      bgImageDragStartY = event.pageY;
+      canvas.style.cursor = "move";
+      return; // Stop processing further
+    }
+    
     if (editorMode === "none") {
       // Start panning
       isDragging = true;
@@ -258,13 +272,9 @@ function handleMouseDown(event) {
       // Redraw to show the new node
       redraw();
     } else if (editorMode === "polygon") {
-      if (isDrawingPolygon) {
-        const worldPos = canvasPosToPos(event.pageX, event.pageY);
-        console.log("Adding polygon point at:", worldPos);
-        polygonPoints.push({ x: worldPos[0], y: worldPos[1] });
-        redraw();
-        drawPolygonInProgress();
-      }
+      rectStartPos = canvasPosToPos(event.pageX, event.pageY);
+      rectEndPos = null;
+      isDrawingPolygon = true;
     } else if (editorMode === "area") {
       // Select an area when in area mode
       const worldPos = canvasPosToPos(event.pageX, event.pageY);
@@ -291,6 +301,45 @@ function handleMouseUp(event) {
     return; // Only handle left clicks
   }
   
+  // Add this new condition for background image dragging
+  if (isDraggingBgImage) {
+    isDraggingBgImage = false;
+    if (editorMode === "bgmove") {
+      canvas.style.cursor = "move"; // Keep move cursor in bgmove mode
+    } else {
+      canvas.style.cursor = "default";
+    }
+    return;
+  }
+  
+  if (editorMode === "polygon" && isDrawingPolygon && rectStartPos && rectEndPos) {
+    const x1 = rectStartPos[0];
+    const y1 = rectStartPos[1];
+    const x2 = rectEndPos[0];
+    const y2 = rectEndPos[1];
+  
+    const points = [
+      { x: Math.min(x1, x2), y: Math.min(y1, y2) },
+      { x: Math.max(x1, x2), y: Math.min(y1, y2) },
+      { x: Math.max(x1, x2), y: Math.max(y1, y2) },
+      { x: Math.min(x1, x2), y: Math.max(y1, y2) }
+    ];
+  
+    isDrawingPolygon = false;
+    rectStartPos = null;
+    rectEndPos = null;
+  
+    showAreaPropertiesDialog(function(properties) {
+      const area = createArea(view.layer, properties.name, properties.type, points);
+      if (properties.createNode) {
+        generateNodesForArea(area);
+      }
+      console.log("Created new area:", area);
+      redraw();
+      populateSuggestions();
+    });
+  }
+  
   if (editorMode === "connect" && editorSelectedNode) {
     const worldPos = canvasPosToPos(event.pageX, event.pageY);
     let node2 = findNearestNode(worldPos[0], worldPos[1]);
@@ -310,8 +359,26 @@ function handleMouseUp(event) {
   isDragging = false;
 }
 
+
 // Handle mouse move events
 function handleMouseMove(event) {
+  // Add this new condition for background image dragging
+  if (isDraggingBgImage && backgroundImages[view.layer]) {
+    const deltaX = (event.pageX - bgImageDragStartX) / view.zoom;
+    const deltaY = (event.pageY - bgImageDragStartY) / view.zoom;
+    
+    // Update background image position
+    backgroundImages[view.layer].x += deltaX;
+    backgroundImages[view.layer].y += deltaY;
+    
+    // Update drag start position
+    bgImageDragStartX = event.pageX;
+    bgImageDragStartY = event.pageY;
+    
+    // Redraw
+    redraw();
+    return; // Stop processing further
+  }
 
   updateSaveAreaButtonVisibility();
 
@@ -336,18 +403,10 @@ function handleMouseMove(event) {
         ctx.lineTo(...posToCanvasPos(node2.x, node2.y));
         ctx.stroke();
       }
-    } else if (editorMode === "polygon" && isDrawingPolygon && polygonPoints.length > 0) {
-      // Draw rubber-band line from last point to cursor
+    } else if (editorMode === "polygon" && isDrawingPolygon && rectStartPos) {
+      rectEndPos = canvasPosToPos(event.pageX, event.pageY);
       redraw();
-      drawPolygonInProgress();
-      
-      const lastPoint = polygonPoints[polygonPoints.length - 1];
-      ctx.strokeStyle = "#42F5C2";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(...posToCanvasPos(lastPoint.x, lastPoint.y));
-      ctx.lineTo(event.pageX, event.pageY);
-      ctx.stroke();
+      drawRectanglePreview(rectStartPos, rectEndPos);
     } else {
       // Pan the view
       view.x += event.movementX / view.zoom;
@@ -492,6 +551,19 @@ function setEditorMode(mode) {
   // Update UI to reflect current mode
   document.getElementById("editorMode").textContent = "Editor Mode: " + 
     mode.charAt(0).toUpperCase() + mode.slice(1);
+  
+  // Add this new condition for background image mode
+  if (mode === "bgmove") {
+    // Set cursor to move if there's a background image
+    if (backgroundImages[view.layer]) {
+      canvas.style.cursor = "move";
+    } else {
+      canvas.style.cursor = "default";
+      alert("No background image in the current layer.");
+    }
+  } else {
+    canvas.style.cursor = "default";
+  }
   
   // Toggle area type selector visibility
   const areaTypeContainer = document.getElementById("areaTypeContainer");
@@ -1018,4 +1090,24 @@ function checkMapSetup() {
   
   // Populate search suggestions
   populateSuggestions();
+}
+
+function drawRectanglePreview(start, end) {
+  if (!start || !end) return;
+  ctx.strokeStyle = "#42F5C2";
+  ctx.fillStyle = "rgba(66, 245, 194, 0.3)";
+  ctx.lineWidth = 2;
+
+  const [x1, y1] = posToCanvasPos(start[0], start[1]);
+  const [x2, y2] = posToCanvasPos(end[0], end[1]);
+
+  const left = Math.min(x1, x2);
+  const right = Math.max(x1, x2);
+  const top = Math.min(y1, y2);
+  const bottom = Math.max(y1, y2);
+
+  ctx.beginPath();
+  ctx.rect(left, top, right - left, bottom - top);
+  ctx.fill();
+  ctx.stroke();
 }

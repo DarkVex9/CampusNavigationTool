@@ -283,6 +283,21 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+#saveMap,
+#loadSavedMap,
+#exportMap,
+#importMap {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+label[for="importMap"] {
+  display: inline-block;
+}
+
 .gap-x-2 {
   column-gap: 0.5rem;
 }
@@ -540,3 +555,10 @@ button:hover {
 button:active {
   transform: translateY(1px);
 }
+
+#importMap {
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+

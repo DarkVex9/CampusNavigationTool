@@ -66,6 +66,7 @@ function setupEventListeners() {
       layerSelect.addEventListener("change", function() {
           view.layer = this.value;
           console.log("Layer changed to:", view.layer);
+          updateBackgroundImageUI(); // Add this line
           redraw();
       });
   }
@@ -171,3 +172,78 @@ function setupNodePanelListeners() {
       });
   }
 }
+
+// Setup background image controls
+document.getElementById('uploadBgImage').addEventListener('change', async function(e) {
+  if (!e.target.files || e.target.files.length === 0) return;
+  
+  const file = e.target.files[0];
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file');
+    return;
+  }
+  
+  try {
+    const dataUrl = await fileToDataURL(file);
+    await loadBackgroundImage(view.layer, dataUrl);
+    updateBackgroundImageUI();
+    redraw();
+  } catch (error) {
+    console.error('Error loading background image:', error);
+    alert('Failed to load the image. Please try again.');
+  }
+});
+
+document.getElementById('bgOpacity').addEventListener('input', function() {
+  const opacity = parseInt(this.value) / 100;
+  document.getElementById('opacityValue').textContent = this.value; // Add this line
+  if (backgroundImages[view.layer]) {
+    backgroundImages[view.layer].opacity = opacity;
+    redraw();
+  }
+});
+
+document.getElementById('centerBgImage').addEventListener('click', function() {
+  if (backgroundImages[view.layer]) {
+    backgroundImages[view.layer].x = 0;
+    backgroundImages[view.layer].y = 0;
+    redraw();
+  }
+});
+
+// Setup save/load controls
+document.getElementById('saveMap').addEventListener('click', function() {
+  saveMapToLocalStorage();
+  alert('Map saved successfully!');
+});
+
+document.getElementById('exportMap').addEventListener('click', function() {
+  exportMapToFile();
+});
+
+document.getElementById('importMap').addEventListener('change', async function(e) {
+  if (!e.target.files || e.target.files.length === 0) return;
+  
+  const file = e.target.files[0];
+  if (file.type !== 'application/json') {
+    alert('Please select a JSON file');
+    return;
+  }
+  
+  try {
+    await importMapFromFile(file);
+    alert('Map imported successfully!');
+  } catch (error) {
+    console.error('Error importing map:', error);
+    alert('Failed to import the map. Please check the file format.');
+  }
+});
+
+// Load saved map on startup
+document.getElementById('loadSavedMap').addEventListener('click', function() {
+  if (loadMapFromLocalStorage()) {
+    alert('Map loaded successfully!');
+  } else {
+    alert('No saved map found or error loading map.');
+  }
+});
