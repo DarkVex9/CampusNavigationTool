@@ -4,74 +4,84 @@
 
 // Main pathfinding function using A* algorithm
 function findPath(sourceNode, destinationNode, userPreferences = {}) {
-    console.log("Finding path from", sourceNode, "to", destinationNode, "with preferences:", userPreferences);
-    
-    const preferences = {
-      avoidStairs: userPreferences.avoidStairs || false,
-      avoidElevators: userPreferences.avoidElevators || false,
-      ...userPreferences
-    };
-    
-    const openSet = new PriorityQueue();
-    const closedSet = new Set();
-    const gScore = new Map();
-    const fScore = new Map();
-    const cameFrom = new Map();
-    
-    for (const layerName of loadedLayers) {
-      if (!nodeGraph[layerName]) continue;
-      for (const node of nodeGraph[layerName]) {
-        if (node) {
-          gScore.set(getNodeKey(node), Infinity);
-          fScore.set(getNodeKey(node), Infinity);
-        }
+  console.log("Finding path from", sourceNode, "to", destinationNode, "with preferences:", userPreferences);
+  
+  const preferences = {
+    avoidStairs: userPreferences.avoidStairs || false,
+    avoidElevators: userPreferences.avoidElevators || false,
+    ...userPreferences
+  };
+  
+  const openSet = new PriorityQueue();
+  const closedSet = new Set();
+  const gScore = new Map();
+  const fScore = new Map();
+  const cameFrom = new Map();
+  
+  for (const layerName of loadedLayers) {
+    if (!nodeGraph[layerName]) continue;
+    for (const node of nodeGraph[layerName]) {
+      if (node) {
+        gScore.set(getNodeKey(node), Infinity);
+        fScore.set(getNodeKey(node), Infinity);
       }
     }
-    
-    gScore.set(getNodeKey(sourceNode), 0);
-    fScore.set(getNodeKey(sourceNode), heuristic(sourceNode, destinationNode));
-    openSet.enqueue(sourceNode, fScore.get(getNodeKey(sourceNode)));
-    
-    while (!openSet.isEmpty()) {
-      const current = openSet.dequeue();
-      if (current === destinationNode) {
-        return reconstructPath(cameFrom, current);
-      }
-      closedSet.add(getNodeKey(current));
-      
-      for (const connection of current.connections || []) {
-        let neighbor;
-        let weight;
-        if (connection.flags && connection.flags.includes("layerChange")) {
-          neighbor = nodeGraph[connection.layer][connection.id];
-          if ((connection.flags.includes("stairs") && preferences.avoidStairs) ||
-              (connection.flags.includes("elevator") && preferences.avoidElevators)) {
-            weight = 1000;
-          } else {
-            weight = 10;
-          }
-        } else {
-          neighbor = nodeGraph[current.layer][connection.id];
-          weight = connection.distance;
-        }
-        if (!neighbor || closedSet.has(getNodeKey(neighbor))) {
-          continue;
-        }
-        const tentativeGScore = gScore.get(getNodeKey(current)) + weight;
-        if (tentativeGScore < gScore.get(getNodeKey(neighbor))) {
-          cameFrom.set(getNodeKey(neighbor), current);
-          gScore.set(getNodeKey(neighbor), tentativeGScore);
-          fScore.set(getNodeKey(neighbor), tentativeGScore + heuristic(neighbor, destinationNode));
-          if (!openSet.contains(neighbor)) {
-            openSet.enqueue(neighbor, fScore.get(getNodeKey(neighbor)));
-          }
-        }
-      }
-    }
-    
-    console.log("No path found between nodes");
-    return null;
   }
+  
+  gScore.set(getNodeKey(sourceNode), 0);
+  fScore.set(getNodeKey(sourceNode), heuristic(sourceNode, destinationNode));
+  openSet.enqueue(sourceNode, fScore.get(getNodeKey(sourceNode)));
+  
+  while (!openSet.isEmpty()) {
+    const current = openSet.dequeue();
+    if (current === destinationNode) {
+      return reconstructPath(cameFrom, current);
+    }
+    closedSet.add(getNodeKey(current));
+    
+    for (const connection of current.connections || []) {
+      let neighbor;
+      let weight;
+      
+      if (connection.layer !== undefined) {
+        // This is a layer change connection
+        neighbor = nodeGraph[connection.layer][connection.id];
+        
+        // Check if the connection is stairs or elevator and apply preferences
+        const isStairs = connection.flags && connection.flags.includes("stairs");
+        const isElevator = connection.flags && connection.flags.includes("elevator");
+        
+        if ((isStairs && preferences.avoidStairs) ||
+            (isElevator && preferences.avoidElevators)) {
+          weight = 1000; // High penalty for avoided types
+        } else {
+          weight = 10; // Normal layer change cost
+        }
+      } else {
+        // Normal connection within the same layer
+        neighbor = nodeGraph[current.layer][connection.id];
+        weight = connection.distance || 1;
+      }
+      
+      if (!neighbor || closedSet.has(getNodeKey(neighbor))) {
+        continue;
+      }
+      
+      const tentativeGScore = gScore.get(getNodeKey(current)) + weight;
+      if (tentativeGScore < gScore.get(getNodeKey(neighbor))) {
+        cameFrom.set(getNodeKey(neighbor), current);
+        gScore.set(getNodeKey(neighbor), tentativeGScore);
+        fScore.set(getNodeKey(neighbor), tentativeGScore + heuristic(neighbor, destinationNode));
+        if (!openSet.contains(neighbor)) {
+          openSet.enqueue(neighbor, fScore.get(getNodeKey(neighbor)));
+        }
+      }
+    }
+  }
+  
+  console.log("No path found between nodes");
+  return null;
+}
   
   function heuristic(nodeA, nodeB) {
     const dx = nodeA.x - nodeB.x;
@@ -146,13 +156,30 @@ function findPath(sourceNode, destinationNode, userPreferences = {}) {
     if (i !== -1) {
       drawPathMarker(path[i], "start");
     }
+    
+    // Find layer transitions within the current layer
+    for (i = 0; i < path.length - 1; i++) {
+      if (path[i].layer === view.layer && path[i+1].layer !== view.layer) {
+        // This is an exit point to another layer
+        drawPathMarker(path[i], path[i+1].layer);
+        
+        // Draw text indicating direction
+        const [x, y] = nodeToCanvasPos(path[i]);
+        ctx.fillStyle = "#333";
+        ctx.font = "bold 12px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(`→ ${path[i+1].layer}`, x, y - 15);
+      }
+    }
+    
+    // Last node in current layer
     i = path.map(x => x.layer).lastIndexOf(view.layer);
     if (i !== -1 && i < path.length - 1) {
       drawPathMarker(path[i], "exit");
     } else if (i === path.length - 1) {
       drawPathMarker(path[i], "end");
     }
-  }
+}
   
   function drawDirectionArrow(fromNode, toNode) {
     const fromPos = nodeToCanvasPos(fromNode);

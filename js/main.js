@@ -33,23 +33,36 @@ function init() {
 
     setupSaveAreaButtonListener();
     
-    // Enable drawing by default
-    drawNodes = true;
+    // Keep editor tools hidden by default
+    editorContainer = document.getElementById("editorTools");
+    if (editorContainer) {
+      editorContainer.style.display = "none";
+      
+      // Update toggle button text accordingly
+      const toggleBtn = document.getElementById("toggleEditor");
+      if (toggleBtn) {
+        toggleBtn.textContent = "Show Editor Tools";
+      }
+    }
     
-     // Reset the view to center
-     view.x = 0;
-     view.y = 0;
-     view.zoom = 1;
-     view.layer = 'outside';
+    // Initialize with drawing disabled by default
+    drawNodes = false;
+    
+    // Reset the view to center
+    view.x = 0;
+    view.y = 0;
+    view.zoom = 1;
+    view.layer = 'outside';
      
-     // Initial render
-     redraw();
+    // Initial render
+    redraw();
      
-     // Check map setup
-     checkMapSetup(); 
+    // Check map setup
+    checkMapSetup(); 
     
     console.log("Initialization complete");
-  }
+}
+
 // Setup all event listeners
 function setupEventListeners() {
   // Add event listeners for UI controls
@@ -83,6 +96,19 @@ function setupEventListeners() {
       canvas.height = window.innerHeight;
       redraw();
   });
+  
+  // Setup toggle editor button with proper functionality
+  const toggleEditorBtn = document.getElementById('toggleEditor');
+  if (toggleEditorBtn) {
+    toggleEditorBtn.addEventListener('click', function() {
+      const editorTools = document.getElementById('editorTools');
+      if (editorTools) {
+        const isVisible = editorTools.style.display !== 'none';
+        editorTools.style.display = isVisible ? 'none' : 'block';
+        this.textContent = isVisible ? 'Show Editor Tools' : 'Hide Editor Tools';
+      }
+    });
+  }
   
   console.log("Event listeners initialized");
 }
@@ -196,7 +222,7 @@ document.getElementById('uploadBgImage').addEventListener('change', async functi
 
 document.getElementById('bgOpacity').addEventListener('input', function() {
   const opacity = parseInt(this.value) / 100;
-  document.getElementById('opacityValue').textContent = this.value; // Add this line
+  document.getElementById('opacityValue').textContent = this.value;
   if (backgroundImages[view.layer]) {
     backgroundImages[view.layer].opacity = opacity;
     redraw();
