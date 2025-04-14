@@ -22,8 +22,8 @@ function init() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   
-  // Load empty layers without test data
-  initializeTestData();
+  // Test Data only
+  // initializeTestData();
   
   // Then initialize UI elements
   initUI();

@@ -341,16 +341,14 @@ function handleMouseUp(event) {
     });
   }
   
-  if (editorMode === "connect" && editorSelectedNode) {
+  if (editorMode === "connect" && editorSelectedNode && event.target === canvas) {
     const worldPos = canvasPosToPos(event.pageX, event.pageY);
     let node2 = findNearestNode(worldPos[0], worldPos[1]);
-    
+  
     if (node2 && editorSelectedNode !== node2) {
       if (editorSelectedNode.connections.some(c => c.id === node2.id)) {
-        console.log("Disconnected Nodes", editorSelectedNode, node2);
         disconnectNodes(editorSelectedNode, node2);
       } else {
-        console.log("Connected Nodes", editorSelectedNode, node2);
         connectNodes(editorSelectedNode, node2);
       }
       redraw();
