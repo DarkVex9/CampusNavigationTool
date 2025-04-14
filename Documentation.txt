@@ -1,8 +1,8 @@
 The map data is broken in "layers". Generally this is a floor of a building or the main outside layer, but it can be any chunk of map that needs its own image.
 
-A layer consists of a string name, some metadata about it, an array of all nodes in it where a node's ID is its index, and an array of all name/node pairings. (named nodes array is currently not fully implimented)
+A layer consists of a string name, some metadata about it, and array of all nodes in it where a node's ID is its index.
 
-Each node contains an integer ID, x position, y position, layer name, and an array of all connections it has.
+Each node contains an integer ID, x position, y position, layer name, node type, and an array of all connections it has.
 
 
 
@@ -17,20 +17,12 @@ connect
 
 
 ==== Connection Flags ====
-*will need to add more flags as we build out the system more*
 
 layerChange	(connection has layer property instead of distance)
-stairs
 
 
 
 
-==== Layer Data ====
-*None of this is implimented yet, just brainstorming ones we should probably have*
-
-img scale
-distance scale (multiplier for node distances to keep it consistent between layers for pathing)
-alternate layer names (building search ie. LBJ vs Student Center)
 
 
 

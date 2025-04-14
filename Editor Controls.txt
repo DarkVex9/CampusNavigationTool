@@ -1,7 +1,6 @@
-Changing layers is done with the dropdown in the top left
-The current editor mode is shown in the top left
+Changing layers is done with the dropdown in the left panel
+The current editor mode is shown in the left panel alongside buttons to change modes
 
-Everything else is controlled through the mouse and hotkeys rather than a UI right now.
 
 ===== Editor Modes =====
 [A] Add - Create a node on the current layer wherever you click
@@ -11,9 +10,7 @@ Everything else is controlled through the mouse and hotkeys rather than a UI rig
 [Esc] None - How users normally interact with the map, can press again to deselect all nodes
 
 
-
 ===== Other Hotkeys =====
 [D] Toggle drawing nodes - Show all nodes and connections on the current layer
-[P] Print - Output the current layer to the console as a JSON string
 [Backspace] Delete selected node
 [Delete] Delete selected node
