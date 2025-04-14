@@ -9,58 +9,61 @@ var loadingCount = 0;
 
 // Initialize the application
 function init() {
-    console.log("Initializing Navigation Application");
-    
-    // Set up canvas
-    canvas = document.getElementById("overlay");
-    if (!canvas) {
-      console.error("Overlay canvas element not found!");
-      return;
-    }
-    
-    ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
-    // Load test data first
-    initializeTestData();
-    
-    // Then initialize UI elements
-    initUI();
-    
-    // Set up event listeners
-    setupEventListeners();
+  console.log("Initializing Navigation Application");
+  
+  // Set up canvas
+  canvas = document.getElementById("overlay");
+  if (!canvas) {
+    console.error("Overlay canvas element not found!");
+    return;
+  }
+  
+  ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  
+  // Test Data only
+  // initializeTestData();
+  
+  // Then initialize UI elements
+  initUI();
+  
+  // Set up event listeners
+  setupEventListeners();
 
-    setupSaveAreaButtonListener();
+  setupSaveAreaButtonListener();
+  
+  // Add the sample data button
+  addSampleDataButton();
+  
+  // Keep editor tools hidden by default
+  editorContainer = document.getElementById("editorTools");
+  if (editorContainer) {
+    editorContainer.style.display = "none";
     
-    // Keep editor tools hidden by default
-    editorContainer = document.getElementById("editorTools");
-    if (editorContainer) {
-      editorContainer.style.display = "none";
-      
-      // Update toggle button text accordingly
-      const toggleBtn = document.getElementById("toggleEditor");
-      if (toggleBtn) {
-        toggleBtn.textContent = "Show Editor Tools";
-      }
+    // Update toggle button text accordingly
+    const toggleBtn = document.getElementById("toggleEditor");
+    if (toggleBtn) {
+      toggleBtn.textContent = "Show Editor Tools";
     }
-    
-    // Initialize with drawing disabled by default
-    drawNodes = false;
-    
-    // Reset the view to center
-    view.x = 0;
-    view.y = 0;
-    view.zoom = 1;
-    view.layer = 'outside';
-     
-    // Initial render
-    redraw();
-     
-    // Check map setup
-    checkMapSetup(); 
-    
-    console.log("Initialization complete");
+  }
+  
+  // Initialize with drawing disabled by default
+  drawNodes = false;
+  
+  // Reset the view to center
+  view.x = 0;
+  view.y = 0;
+  view.zoom = 1;
+  view.layer = 'outside';
+   
+  // Initial render
+  redraw();
+   
+  // Check map setup
+  checkMapSetup(); 
+  
+  console.log("Initialization complete");
 }
 
 // Setup all event listeners
@@ -197,6 +200,23 @@ function setupNodePanelListeners() {
           redraw();
       });
   }
+  const endpointCheckbox = document.getElementById("constraintEndpoint");
+  if (endpointCheckbox) {
+    endpointCheckbox.addEventListener("change", function () {
+      if (!editorSelectedNode) return;
+      if (!editorSelectedNode.constraints) {
+        editorSelectedNode.constraints = [];
+      }
+      if (this.checked) {
+        if (!editorSelectedNode.constraints.includes("endpoint")) {
+          editorSelectedNode.constraints.push("endpoint");
+        }
+      } else {
+        editorSelectedNode.constraints = editorSelectedNode.constraints.filter(c => c !== "endpoint");
+      }
+      redraw();
+    });
+  }  
 }
 
 // Setup background image controls

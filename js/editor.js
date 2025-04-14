@@ -254,6 +254,7 @@ function handleMouseDown(event) {
       
       // Make nodes more visible by giving them a name by default
       editorSelectedNode.name = "Node " + editorSelectedNode.id;
+      editorSelectedNode.constraints = [];
       
       // Add to named nodes
       if (!namedNodes[view.layer]) {
@@ -340,16 +341,14 @@ function handleMouseUp(event) {
     });
   }
   
-  if (editorMode === "connect" && editorSelectedNode) {
+  if (editorMode === "connect" && editorSelectedNode && event.target === canvas) {
     const worldPos = canvasPosToPos(event.pageX, event.pageY);
     let node2 = findNearestNode(worldPos[0], worldPos[1]);
-    
+  
     if (node2 && editorSelectedNode !== node2) {
       if (editorSelectedNode.connections.some(c => c.id === node2.id)) {
-        console.log("Disconnected Nodes", editorSelectedNode, node2);
         disconnectNodes(editorSelectedNode, node2);
       } else {
-        console.log("Connected Nodes", editorSelectedNode, node2);
         connectNodes(editorSelectedNode, node2);
       }
       redraw();
@@ -440,24 +439,6 @@ function handleMouseMove(event) {
     }
   }
 }
-
-// Handle double click for completing polygons
-/* function handleDoubleClick(event) {
-  if (editorMode === "polygon" && isDrawingPolygon && polygonPoints.length >= 3) {
-    console.log("Completing polygon with", polygonPoints.length, "points");
-    isDrawingPolygon = false;
-    showAreaPropertiesDialog(function(properties) {
-      const area = createArea(view.layer, properties.name, properties.type, polygonPoints);
-      if (properties.createNode) {
-        generateNodesForArea(area);
-      }
-      console.log("Created new area:", area);
-      polygonPoints = [];
-      redraw();
-      populateSuggestions();
-    });
-  }
-} */
 
 // Handle scroll events for zooming
 function handleScroll(event) {
@@ -615,7 +596,7 @@ function updateSaveAreaButtonVisibility() {
 }
 
 // Create a node
-function createNode(layer, x, y, type = "regular") {
+function createNode(layer, x, y, type = "regular", constraints = []) {
   // If the layer doesn't exist yet, initialize it
   if (!nodeGraph[layer]) {
     nodeGraph[layer] = [];
@@ -634,7 +615,8 @@ function createNode(layer, x, y, type = "regular") {
     y: y,
     layer: layer,
     connections: [],
-    type: type
+    type: type,
+    constraints: constraints  // Add constraints array
   };
   
   // Add to nodegraph array
