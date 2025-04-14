@@ -364,7 +364,27 @@ function showNodePanel(node) {
   if (typeSelect) {
     typeSelect.value = node.type || "regular";
   }
+  
+  // Add a button to add layer change connection
+  const existingConnectBtn = document.getElementById("connectLayerBtn");
+  if (existingConnectBtn) {
+    existingConnectBtn.remove();
+  }
+  
+  const connectLayerButton = document.createElement("button");
+  connectLayerButton.id = "connectLayerBtn";
+  connectLayerButton.textContent = "Connect to Other Layer";
+  connectLayerButton.className = "w-full bg-blue-300 text-white text-xs p-1 rounded mt-2 mb-2";
+  connectLayerButton.addEventListener("click", () => {
+    showLayerChangeUI();
+  });
+  
+  // Add the button after the node type dropdown
+  if (typeSelect && typeSelect.parentNode) {
+    typeSelect.parentNode.after(connectLayerButton);
+  }
 
+  // Handle delete button
   let existingDeleteBtn = document.getElementById("deleteNodeBtn");
   if (existingDeleteBtn) {
     existingDeleteBtn.remove();
@@ -387,6 +407,7 @@ function showNodePanel(node) {
   // Update connections list
   updateConnectionsList(node);
 }
+
 
 // Update the list of connections in the panel
 function updateConnectionsList(node) {
@@ -517,141 +538,166 @@ function updateNodeFlags() {
 
 // Show UI for adding a layer change connection
 function showLayerChangeUI() {
-    if (!editorSelectedNode) return;
-    
-    console.log("Opening layer change UI for node:", editorSelectedNode);
-    
-    // Create a modal for selecting layer and node
-    const modal = document.createElement("div");
-    modal.className = "layer-change-modal";
-    modal.style.position = "fixed";
-    modal.style.top = "50%";
-    modal.style.left = "50%";
-    modal.style.transform = "translate(-50%, -50%)";
-    modal.style.backgroundColor = "white";
-    modal.style.padding = "20px";
-    modal.style.borderRadius = "10px";
-    modal.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
-    modal.style.zIndex = "1000";
-    
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h3>Add Layer Change Connection</h3>
-            <div>
-                <label for="targetLayer">Target Layer:</label>
-                <select id="targetLayer"></select>
-            </div>
-            <div style="margin-top: 10px;">
-                <label for="targetNode">Target Node:</label>
-                <select id="targetNode"></select>
-            </div>
-            <div style="margin-top: 10px;">
-                <label>Connection Type:</label>
-                <div>
-                    <input type="checkbox" id="modalIsStairs">
-                    <label for="modalIsStairs">Stairs</label>
-                </div>
-                <div>
-                    <input type="checkbox" id="modalIsElevator">
-                    <label for="modalIsElevator">Elevator</label>
-                </div>
-            </div>
-            <div style="margin-top: 15px; text-align: center;">
-                <button id="confirmLayerChange" style="margin-right: 10px; padding: 5px 10px;">Add Connection</button>
-                <button id="cancelLayerChange" style="padding: 5px 10px;">Cancel</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Populate layer dropdown
-    const layerSelect = document.getElementById("targetLayer");
-    for (const layer of loadedLayers) {
-        if (layer !== editorSelectedNode.layer) {
-            const option = document.createElement("option");
-            option.value = layer;
-            option.textContent = layer;
-            layerSelect.appendChild(option);
-        }
-    }
-    
-    // Function to update node dropdown when layer changes
-    const updateNodeDropdown = () => {
-        const nodeSelect = document.getElementById("targetNode");
-        nodeSelect.innerHTML = "";
-        
-        const selectedLayer = layerSelect.value;
-        if (!selectedLayer || !nodeGraph[selectedLayer]) return;
-        
-        for (let i = 0; i < nodeGraph[selectedLayer].length; i++) {
-            const node = nodeGraph[selectedLayer][i];
-            if (!node) continue;
-            
-            const option = document.createElement("option");
-            option.value = node.id;
-            option.textContent = node.name ? `${node.id}: ${node.name}` : `Node ${node.id}`;
-            nodeSelect.appendChild(option);
-        }
-    };
-    
-    // Initial population of node dropdown
-    layerSelect.addEventListener("change", updateNodeDropdown);
-    updateNodeDropdown();
-    
-    // Handle add connection button
-    document.getElementById("confirmLayerChange").addEventListener("click", () => {
-        const targetLayer = layerSelect.value;
-        const targetNodeId = parseInt(document.getElementById("targetNode").value);
-        const isStairs = document.getElementById("modalIsStairs").checked;
-        const isElevator = document.getElementById("modalIsElevator").checked;
-        
-        if (!targetLayer || !nodeGraph[targetLayer]) {
-            alert("Please select a valid target layer");
-            return;
-        }
-        
-        const targetNode = nodeGraph[targetLayer][targetNodeId];
-        if (!targetNode) {
-            alert("Please select a valid target node");
-            return;
-        }
-        
-        // Create connection with layer change
-        const connection = {
-            id: targetNodeId,
-            layer: targetLayer,
-            flags: ["layerChange"]
-        };
-        
-        // Add stairs/elevator flags
-        if (isStairs) connection.flags.push("stairs");
-        if (isElevator) connection.flags.push("elevator");
-        
-        // Add connection to selected node
-        editorSelectedNode.connections.push(connection);
-        
-        // Add reverse connection
-        const reverseConnection = {
-            id: editorSelectedNode.id,
-            layer: editorSelectedNode.layer,
-            flags: [...connection.flags]
-        };
-        
-        targetNode.connections.push(reverseConnection);
-        
-        console.log("Added layer change connection from", editorSelectedNode, "to", targetNode);
-        
-        // Update UI and remove modal
-        updateConnectionsList(editorSelectedNode);
-        document.body.removeChild(modal);
-        redraw();
-    });
-    
-    // Handle cancel button
-    document.getElementById("cancelLayerChange").addEventListener("click", () => {
-        document.body.removeChild(modal);
-    });
+  if (!editorSelectedNode) return;
+  
+  console.log("Opening layer change UI for node:", editorSelectedNode);
+  
+  // Create a modal for selecting layer and node
+  const modal = document.createElement("div");
+  modal.className = "layer-change-modal";
+  modal.style.position = "fixed";
+  modal.style.top = "50%";
+  modal.style.left = "50%";
+  modal.style.transform = "translate(-50%, -50%)";
+  modal.style.backgroundColor = "white";
+  modal.style.padding = "20px";
+  modal.style.borderRadius = "10px";
+  modal.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
+  modal.style.zIndex = "1000";
+  
+  modal.innerHTML = `
+      <div class="modal-content">
+          <h3>Add Layer Change Connection</h3>
+          <div>
+              <label for="targetLayer">Target Layer:</label>
+              <select id="targetLayer"></select>
+          </div>
+          <div style="margin-top: 10px;">
+              <label for="targetNode">Target Node:</label>
+              <select id="targetNode"></select>
+          </div>
+          <div style="margin-top: 10px;">
+              <label>Connection Type:</label>
+              <div>
+                  <input type="radio" id="modalConnTypeAuto" name="connType" value="auto" checked>
+                  <label for="modalConnTypeAuto">Automatic (based on node types)</label>
+              </div>
+              <div>
+                  <input type="radio" id="modalConnTypeStairs" name="connType" value="stairs">
+                  <label for="modalConnTypeStairs">Stairs</label>
+              </div>
+              <div>
+                  <input type="radio" id="modalConnTypeElevator" name="connType" value="elevator">
+                  <label for="modalConnTypeElevator">Elevator</label>
+              </div>
+              <div>
+                  <input type="radio" id="modalConnTypeRegular" name="connType" value="regular">
+                  <label for="modalConnTypeRegular">Regular</label>
+              </div>
+          </div>
+          <div style="margin-top: 15px; text-align: center;">
+              <button id="confirmLayerChange" style="margin-right: 10px; padding: 5px 10px;">Add Connection</button>
+              <button id="cancelLayerChange" style="padding: 5px 10px;">Cancel</button>
+          </div>
+      </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Populate layer dropdown
+  const layerSelect = document.getElementById("targetLayer");
+  for (const layer of loadedLayers) {
+      if (layer !== editorSelectedNode.layer) {
+          const option = document.createElement("option");
+          option.value = layer;
+          option.textContent = layer;
+          layerSelect.appendChild(option);
+      }
+  }
+  
+  // Function to update node dropdown when layer changes
+  const updateNodeDropdown = () => {
+      const nodeSelect = document.getElementById("targetNode");
+      nodeSelect.innerHTML = "";
+      
+      const selectedLayer = layerSelect.value;
+      if (!selectedLayer || !nodeGraph[selectedLayer]) return;
+      
+      for (let i = 0; i < nodeGraph[selectedLayer].length; i++) {
+          const node = nodeGraph[selectedLayer][i];
+          if (!node) continue;
+          
+          const option = document.createElement("option");
+          option.value = node.id;
+          option.textContent = node.name ? `${node.id}: ${node.name}` : `Node ${node.id}`;
+          // Highlight stairs/elevator nodes in the dropdown
+          if (node.type === "stairs" || node.type === "elevator") {
+              option.textContent += ` (${node.type})`;
+              option.style.fontWeight = "bold";
+          }
+          nodeSelect.appendChild(option);
+      }
+      
+      // Auto-select a matching stairs/elevator node if possible
+      if (editorSelectedNode.type === "stairs" || editorSelectedNode.type === "elevator") {
+          for (let i = 0; i < nodeSelect.options.length; i++) {
+              const node = nodeGraph[selectedLayer][nodeSelect.options[i].value];
+              if (node && node.type === editorSelectedNode.type) {
+                  nodeSelect.selectedIndex = i;
+                  break;
+              }
+          }
+      }
+  };
+  
+  // Initial population of node dropdown
+  layerSelect.addEventListener("change", updateNodeDropdown);
+  updateNodeDropdown();
+  
+  // Handle add connection button
+  document.getElementById("confirmLayerChange").addEventListener("click", () => {
+      const targetLayer = layerSelect.value;
+      const targetNodeId = parseInt(document.getElementById("targetNode").value);
+      const connType = document.querySelector('input[name="connType"]:checked').value;
+      
+      if (!targetLayer || !nodeGraph[targetLayer]) {
+          alert("Please select a valid target layer");
+          return;
+      }
+      
+      const targetNode = nodeGraph[targetLayer][targetNodeId];
+      if (!targetNode) {
+          alert("Please select a valid target node");
+          return;
+      }
+      
+      // Determine connection type based on selected option or node types
+      let connectionFlags = ["layerChange"];
+      if (connType === "stairs" || (connType === "auto" && 
+          (editorSelectedNode.type === "stairs" || targetNode.type === "stairs"))) {
+          connectionFlags.push("stairs");
+      } else if (connType === "elevator" || (connType === "auto" && 
+          (editorSelectedNode.type === "elevator" || targetNode.type === "elevator"))) {
+          connectionFlags.push("elevator");
+      }
+      
+      // Add connection to selected node
+      editorSelectedNode.connections.push({
+          id: targetNodeId,
+          layer: targetLayer,
+          flags: connectionFlags
+      });
+      
+      // Add reverse connection
+      targetNode.connections.push({
+          id: editorSelectedNode.id,
+          layer: editorSelectedNode.layer,
+          flags: connectionFlags
+      });
+      
+      console.log("Added layer change connection from", editorSelectedNode, "to", targetNode, 
+                  "with flags:", connectionFlags.join(", "));
+      
+      // Update UI and remove modal
+      updateConnectionsList(editorSelectedNode);
+      document.body.removeChild(modal);
+      redraw();
+  });
+  
+  // Handle cancel button
+  document.getElementById("cancelLayerChange").addEventListener("click", () => {
+      document.body.removeChild(modal);
+  });
 }
 
 

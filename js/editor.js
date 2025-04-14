@@ -651,18 +651,30 @@ function createNode(layer, x, y, type = "regular") {
 function connectNodes(node1, node2) {
   // Check if nodes are on different layers
   if (node1.layer !== node2.layer) {
-    // Create layer change connection
+    // Determine if this is a stairs or elevator connection
+    const isStairs = node1.type === "stairs" || node2.type === "stairs";
+    const isElevator = node1.type === "elevator" || node2.type === "elevator";
+    
+    // Create flags array based on node types
+    const flags = ["layerChange"];
+    if (isStairs) flags.push("stairs");
+    if (isElevator) flags.push("elevator");
+    
+    // Add connection to first node
     node1.connections.push({
       id: node2.id,
       layer: node2.layer,
-      flags: ["layerChange"]
+      flags: flags
     });
     
+    // Add connection to second node
     node2.connections.push({
       id: node1.id,
       layer: node1.layer,
-      flags: ["layerChange"]
+      flags: flags
     });
+    
+    console.log(`Created ${isStairs ? 'stairs' : isElevator ? 'elevator' : 'layer change'} connection between layers ${node1.layer} and ${node2.layer}`);
   } else {
     // Calculate distance
     const dx = node1.x - node2.x;
