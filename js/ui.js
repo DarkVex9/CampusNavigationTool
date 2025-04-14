@@ -715,19 +715,6 @@ if (editorButtons.length > 0) {
   console.warn("Editor buttons not found");
 }
 
-// Toggle editor tools visibility
-const toggleEditorBtn = document.getElementById('toggleEditor');
-if (toggleEditorBtn) {
-  toggleEditorBtn.addEventListener('click', function() {
-    const editorTools = document.getElementById('editorTools');
-    if (editorTools) {
-      const isVisible = editorTools.style.display !== 'none';
-      editorTools.style.display = isVisible ? 'none' : 'block';
-      this.textContent = isVisible ? 'Show Editor Tools' : 'Hide Editor Tools';
-    }
-  });
-}
-
 // Set up zoom controls
 const zoomInBtn = document.getElementById('zoomIn');
 if (zoomInBtn) {
