@@ -14,6 +14,7 @@ let rectEndPos = null;
 var isDraggingBgImage = false;
 var bgImageDragStartX = 0;
 var bgImageDragStartY = 0;
+var tempCursorPos = null;
 
 // Handle key press events
 function handleKeyPress(event) {
@@ -273,9 +274,49 @@ function handleMouseDown(event) {
       // Redraw to show the new node
       redraw();
     } else if (editorMode === "polygon") {
-      rectStartPos = canvasPosToPos(event.pageX, event.pageY);
-      rectEndPos = null;
+      // Add point to polygon on each click
+      const worldPos = canvasPosToPos(event.pageX, event.pageY);
+      
+      // Check if we're clicking near the first point to close the polygon
+      if (polygonPoints.length > 2) {
+        const firstPoint = polygonPoints[0];
+        const distance = Math.sqrt(
+          Math.pow(firstPoint.x - worldPos[0], 2) + 
+          Math.pow(firstPoint.y - worldPos[1], 2)
+        );
+        
+        if (distance < 10 / view.zoom) { // 10 pixels tolerance in world coordinates
+          // Close polygon
+          console.log("Closing polygon with", polygonPoints.length, "points");
+          isDrawingPolygon = true;
+          
+          // Show save button
+          const saveAreaButton = document.getElementById("saveAreaButton");
+          if (saveAreaButton) {
+            saveAreaButton.style.display = "block";
+          }
+          
+          redraw();
+          return;
+        }
+      }
+      
+      // Add new point
+      polygonPoints.push({ x: worldPos[0], y: worldPos[1] });
       isDrawingPolygon = true;
+      
+      console.log("Added polygon point:", worldPos[0], worldPos[1]);
+      console.log("Total points:", polygonPoints.length);
+      
+      // Show save button if we have at least 3 points
+      if (polygonPoints.length >= 3) {
+        const saveAreaButton = document.getElementById("saveAreaButton");
+        if (saveAreaButton) {
+          saveAreaButton.style.display = "block";
+        }
+      }
+      
+      redraw();
     } else if (editorMode === "area") {
       // Select an area when in area mode
       const worldPos = canvasPosToPos(event.pageX, event.pageY);
@@ -295,6 +336,7 @@ function handleMouseDown(event) {
     }
   }
 }
+
 
 // Handle mouse up events
 function handleMouseUp(event) {
@@ -381,6 +423,12 @@ function handleMouseMove(event) {
 
   updateSaveAreaButtonVisibility();
 
+  // Track cursor position for polygon drawing
+  if (editorMode === "polygon" && polygonPoints.length > 0) {
+    tempCursorPos = canvasPosToPos(event.pageX, event.pageY);
+    redraw();
+  }
+
   if (isDragging) {
     if (editorMode === "move" && editorSelectedNode) {
       // Move the selected node
@@ -402,10 +450,6 @@ function handleMouseMove(event) {
         ctx.lineTo(...posToCanvasPos(node2.x, node2.y));
         ctx.stroke();
       }
-    } else if (editorMode === "polygon" && isDrawingPolygon && rectStartPos) {
-      rectEndPos = canvasPosToPos(event.pageX, event.pageY);
-      redraw();
-      drawRectanglePreview(rectStartPos, rectEndPos);
     } else {
       // Pan the view
       view.x += event.movementX / view.zoom;
@@ -458,15 +502,23 @@ function handleScroll(event) {
 // Draw the polygon currently being created
 function drawPolygonInProgress() {
   if (polygonPoints.length === 0) return;
+  
   ctx.fillStyle = "rgba(66, 245, 194, 0.3)";
   ctx.strokeStyle = "#42F5C2";
   ctx.lineWidth = 2;
   
   ctx.beginPath();
   ctx.moveTo(...posToCanvasPos(polygonPoints[0].x, polygonPoints[0].y));
+  
   for (let i = 1; i < polygonPoints.length; i++) {
     ctx.lineTo(...posToCanvasPos(polygonPoints[i].x, polygonPoints[i].y));
   }
+  
+  // Draw line to cursor if we're currently placing points
+  if (isDrawingPolygon && tempCursorPos) {
+    ctx.lineTo(...posToCanvasPos(tempCursorPos[0], tempCursorPos[1]));
+  }
+  
   if (polygonPoints.length >= 3) {
     ctx.closePath();
     ctx.fill();
@@ -475,7 +527,20 @@ function drawPolygonInProgress() {
   
   // Draw points
   for (const point of polygonPoints) {
-    drawCircle(point.x, point.y, 3, "#42F5C2", true);
+    const [x, y] = posToCanvasPos(point.x, point.y);
+    ctx.fillStyle = "#42F5C2";
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Highlight first point differently to show it can be clicked to close
+    if (point === polygonPoints[0] && polygonPoints.length > 2) {
+      ctx.strokeStyle = "#FF5722";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
   }
 }
 
@@ -526,6 +591,16 @@ function showAreaPropertiesDialog(callback) {
 function setEditorMode(mode) {
   console.log("Changing editor mode to:", mode);
   
+  // Clean up polygon if leaving polygon mode
+  if (editorMode === "polygon" && mode !== "polygon") {
+    polygonPoints = [];
+    isDrawingPolygon = false;
+    const saveAreaButton = document.getElementById("saveAreaButton");
+    if (saveAreaButton) {
+      saveAreaButton.style.display = "none";
+    }
+  }
+  
   // Set the current mode
   editorMode = mode;
   
@@ -555,7 +630,7 @@ function setEditorMode(mode) {
   // Toggle save area button visibility
   const saveAreaButton = document.getElementById("saveAreaButton");
   if (saveAreaButton) {
-    saveAreaButton.style.display = (mode === "polygon") ? "block" : "none";
+    saveAreaButton.style.display = (mode === "polygon" && polygonPoints.length >= 3) ? "block" : "none";
   }
   
   // Update button states
@@ -569,7 +644,7 @@ function setEditorMode(mode) {
   });
   
   // Handle polygon mode specially
-  if (mode === "polygon") {
+  if (mode === "polygon" && editorMode !== "polygon") {
     isDrawingPolygon = true;
     polygonPoints = [];
     console.log("Started polygon drawing");
@@ -590,7 +665,7 @@ function setEditorMode(mode) {
 
 function updateSaveAreaButtonVisibility() {
   const saveAreaButton = document.getElementById("saveAreaButton");
-  if (saveAreaButton && editorMode === "polygon" && isDrawingPolygon) {
+  if (saveAreaButton && editorMode === "polygon") {
     saveAreaButton.style.display = (polygonPoints.length >= 3) ? "block" : "none";
   }
 }
