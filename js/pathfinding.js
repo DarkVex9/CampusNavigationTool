@@ -63,7 +63,15 @@ function findPath(sourceNode, destinationNode, userPreferences = {}) {
         weight = connection.distance || 1;
       }
       
+      // Skip if neighbor is null or already in closed set
       if (!neighbor || closedSet.has(getNodeKey(neighbor))) {
+        continue;
+      }
+      
+      // Skip nodes with endpoint constraint (except the destination)
+      if (neighbor !== destinationNode && 
+          neighbor.constraints && 
+          neighbor.constraints.includes("endpoint")) {
         continue;
       }
       

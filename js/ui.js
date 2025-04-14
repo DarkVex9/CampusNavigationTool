@@ -275,7 +275,6 @@ function drawNodesAndConnections() {
     }
     
     let node = nodeGraph[view.layer][i];
-    console.log("Drawing node:", node.id, "at position:", node.x, node.y);
     
     // Use a larger node radius to make them more visible
     const nodeColor = node.type && nodeTypes[node.type] ? 
@@ -287,6 +286,16 @@ function drawNodesAndConnections() {
     ctx.beginPath();
     ctx.arc(x, y, editorStyle.nodeRadius * 1.5, 0, 2 * Math.PI);
     ctx.fill();
+    
+    // Draw border around node
+    if (node.constraints && node.constraints.includes("endpoint")) {
+      // Draw a thicker border for endpoint nodes in a distinct color
+      ctx.strokeStyle = "#ff3b30"; // Use a bright red for endpoints
+      ctx.lineWidth = 2;
+    } else {
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1;
+    }
     ctx.stroke();
     
     // Draw node name if it exists
@@ -294,6 +303,13 @@ function drawNodesAndConnections() {
       ctx.fillStyle = "#000000";
       ctx.font = "10px Arial";
       ctx.fillText(node.name, x + 8, y);
+    }
+    
+    // Draw endpoint indicator if applicable
+    if (node.constraints && node.constraints.includes("endpoint")) {
+      ctx.fillStyle = "#ff3b30";
+      ctx.font = "bold 10px Arial";
+      ctx.fillText("⊗", x - 12, y - 10); // Symbol for endpoint
     }
   }
   
@@ -365,6 +381,47 @@ function showNodePanel(node) {
     typeSelect.value = node.type || "regular";
   }
   
+  // Add node constraints section
+  const existingConstraintsDiv = document.getElementById("nodeConstraintsDiv");
+  if (existingConstraintsDiv) {
+    existingConstraintsDiv.remove();
+  }
+  
+  const constraintsDiv = document.createElement("div");
+  constraintsDiv.id = "nodeConstraintsDiv";
+  constraintsDiv.className = "mb-2";
+  
+  // Create the constraints UI
+  const constraintsLabel = document.createElement("label");
+  constraintsLabel.className = "block text-xs font-medium";
+  constraintsLabel.textContent = "Node Constraints:";
+  constraintsDiv.appendChild(constraintsLabel);
+  
+  // Create endpoint checkbox
+  const endpointDiv = document.createElement("div");
+  endpointDiv.className = "flex items-center mt-1";
+  
+  const endpointCheckbox = document.createElement("input");
+  endpointCheckbox.type = "checkbox";
+  endpointCheckbox.id = "constraintEndpoint";
+  endpointCheckbox.className = "mr-2";
+  // Set checked state based on node constraints
+  endpointCheckbox.checked = node.constraints && node.constraints.includes("endpoint");
+  
+  const endpointLabel = document.createElement("label");
+  endpointLabel.htmlFor = "constraintEndpoint";
+  endpointLabel.className = "text-xs";
+  endpointLabel.textContent = "Endpoint Node (start/end only, no pass-through)";
+  
+  endpointDiv.appendChild(endpointCheckbox);
+  endpointDiv.appendChild(endpointLabel);
+  constraintsDiv.appendChild(endpointDiv);
+  
+  // Add the constraints div after node type
+  if (typeSelect && typeSelect.parentNode) {
+    typeSelect.parentNode.after(constraintsDiv);
+  }
+  
   // Add a button to add layer change connection
   const existingConnectBtn = document.getElementById("connectLayerBtn");
   if (existingConnectBtn) {
@@ -379,10 +436,8 @@ function showNodePanel(node) {
     showLayerChangeUI();
   });
   
-  // Add the button after the node type dropdown
-  if (typeSelect && typeSelect.parentNode) {
-    typeSelect.parentNode.after(connectLayerButton);
-  }
+  // Add the button after the constraints div
+  constraintsDiv.after(connectLayerButton);
 
   // Handle delete button
   let existingDeleteBtn = document.getElementById("deleteNodeBtn");
@@ -761,6 +816,23 @@ if (saveNodeDataBtn) {
     if (xInput) editorSelectedNode.x = parseFloat(xInput.value);
     if (yInput) editorSelectedNode.y = parseFloat(yInput.value);
     if (typeSelect) editorSelectedNode.type = typeSelect.value;
+    
+    // Update constraints
+    if (!editorSelectedNode.constraints) {
+      editorSelectedNode.constraints = [];
+    }
+    
+    const endpointCheckbox = document.getElementById('constraintEndpoint');
+    if (endpointCheckbox) {
+      const isEndpoint = endpointCheckbox.checked;
+      const constraintIndex = editorSelectedNode.constraints.indexOf("endpoint");
+      
+      if (isEndpoint && constraintIndex === -1) {
+        editorSelectedNode.constraints.push("endpoint");
+      } else if (!isEndpoint && constraintIndex !== -1) {
+        editorSelectedNode.constraints.splice(constraintIndex, 1);
+      }
+    }
     
     // Update named nodes array
     if (editorSelectedNode.name) {
