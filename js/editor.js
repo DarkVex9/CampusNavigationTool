@@ -1111,3 +1111,27 @@ function drawRectanglePreview(start, end) {
   ctx.fill();
   ctx.stroke();
 }
+
+document.getElementById("addFloorBtn").addEventListener("click", () => {
+  const newLayerName = prompt("Enter name for new floor/layer (e.g., floor2, rooftop, outside-west):");
+  if (!newLayerName) return;
+
+  // Prevent duplicate layer names
+  if (loadedLayers.includes(newLayerName)) {
+    alert("A floor/layer with that name already exists.");
+    return;
+  }
+
+  // Initialize the new layer
+  nodeGraph[newLayerName] = [];
+  namedNodes[newLayerName] = [];
+  areas[newLayerName] = [];
+  loadedLayers.push(newLayerName);
+
+  console.log("New layer created:", newLayerName);
+
+  // Update UI
+  checkMapSetup();
+  view.layer = newLayerName;
+  redraw();
+});
