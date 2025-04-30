@@ -33,8 +33,6 @@ function init() {
 
   setupSaveAreaButtonListener();
   
-  // Add the sample data button
-  addSampleDataButton();
   
   // Keep editor tools hidden by default
   editorContainer = document.getElementById("editorTools");

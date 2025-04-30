@@ -251,6 +251,7 @@ function handleMouseDown(event) {
     } else if (editorMode === "add") {
       const worldPos = canvasPosToPos(event.pageX, event.pageY);
       editorSelectedNode = createNode(view.layer, worldPos[0], worldPos[1]);
+      drawNodes = true;
       
       // Make nodes more visible by giving them a name by default
       editorSelectedNode.name = "Node " + editorSelectedNode.id;
@@ -260,18 +261,23 @@ function handleMouseDown(event) {
       if (!namedNodes[view.layer]) {
         namedNodes[view.layer] = [];
       }
+      
+      if (!loadedLayers.includes(view.layer)) {
+        loadedLayers.push(view.layer);
+      }
       namedNodes[view.layer].push({
         id: editorSelectedNode.id,
         name: editorSelectedNode.name
       });
-      
+
+      checkMapSetup();
+      populateSuggestions();
       console.log("Node added:", editorSelectedNode);
-      
       // Show the node panel immediately for editing
-      showNodePanel(editorSelectedNode);
-      
+      showNodePanel(editorSelectedNode);    
       // Redraw to show the new node
       redraw();
+
     } else if (editorMode === "polygon") {
       rectStartPos = canvasPosToPos(event.pageX, event.pageY);
       rectEndPos = null;
@@ -1105,3 +1111,27 @@ function drawRectanglePreview(start, end) {
   ctx.fill();
   ctx.stroke();
 }
+
+document.getElementById("addFloorBtn").addEventListener("click", () => {
+  const newLayerName = prompt("Enter name for new floor/layer (e.g., floor2, rooftop, outside-west):");
+  if (!newLayerName) return;
+
+  // Prevent duplicate layer names
+  if (loadedLayers.includes(newLayerName)) {
+    alert("A floor/layer with that name already exists.");
+    return;
+  }
+
+  // Initialize the new layer
+  nodeGraph[newLayerName] = [];
+  namedNodes[newLayerName] = [];
+  areas[newLayerName] = [];
+  loadedLayers.push(newLayerName);
+
+  console.log("New layer created:", newLayerName);
+
+  // Update UI
+  checkMapSetup();
+  view.layer = newLayerName;
+  redraw();
+});
