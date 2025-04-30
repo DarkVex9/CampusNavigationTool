@@ -269,6 +269,7 @@ function setupNodePanelListeners() {
   }  
 }
 
+
 // Setup background image controls
 document.getElementById('uploadBgImage').addEventListener('change', async function(e) {
   if (!e.target.files || e.target.files.length === 0) return;
@@ -280,13 +281,40 @@ document.getElementById('uploadBgImage').addEventListener('change', async functi
   }
   
   try {
+    // fileToDataURL is defined in utils.js
     const dataUrl = await fileToDataURL(file);
-    await loadBackgroundImage(view.layer, dataUrl);
-    updateBackgroundImageUI();
-    redraw();
+    
+    // Create a new Image object and load the data URL
+    const img = new Image();
+    img.onload = function() {
+      // Store the image object and its associated data
+      backgroundImages[view.layer] = {
+        image: img,
+        x: 0,
+        y: 0,
+        width: img.width,
+        height: img.height,
+        opacity: 0.5,
+        dataURL: dataUrl // Store the data URL for saving
+      };
+      
+      console.log(`Background image loaded for layer ${view.layer}:`, img.width, "x", img.height);
+      
+      // Update UI and redraw
+      updateBackgroundImageUI();
+      redraw();
+    };
+    
+    img.onerror = function() {
+      console.error('Error loading the image');
+      alert('Failed to load the image. Please try again.');
+    };
+    
+    // Set the source to trigger loading
+    img.src = dataUrl;
   } catch (error) {
-    console.error('Error loading background image:', error);
-    alert('Failed to load the image. Please try again.');
+    console.error('Error processing background image:', error);
+    alert('Failed to process the image. Please try again.');
   }
 });
 
@@ -306,6 +334,28 @@ document.getElementById('centerBgImage').addEventListener('click', function() {
     redraw();
   }
 });
+
+// Update background image UI based on current layer
+function updateBackgroundImageUI() {
+  const bgControls = document.getElementById('backgroundControls');
+  const hasImage = !!backgroundImages[view.layer];
+  
+  if (bgControls) {
+    // Show/hide controls based on whether there's an image
+    bgControls.style.display = hasImage ? 'block' : 'none';
+    
+    if (hasImage) {
+      // Update opacity slider
+      const opacitySlider = document.getElementById('bgOpacity');
+      const opacityValue = document.getElementById('opacityValue');
+      if (opacitySlider && opacityValue) {
+        const opacity = backgroundImages[view.layer].opacity || 0.5;
+        opacitySlider.value = Math.round(opacity * 100);
+        opacityValue.textContent = Math.round(opacity * 100);
+      }
+    }
+  }
+}
 
 // Setup save/load controls
 document.getElementById('saveMap').addEventListener('click', function() {
