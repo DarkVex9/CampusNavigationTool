@@ -261,18 +261,23 @@ function handleMouseDown(event) {
       if (!namedNodes[view.layer]) {
         namedNodes[view.layer] = [];
       }
+      
+      if (!loadedLayers.includes(view.layer)) {
+        loadedLayers.push(view.layer);
+      }
       namedNodes[view.layer].push({
         id: editorSelectedNode.id,
         name: editorSelectedNode.name
       });
-      
+
+      checkMapSetup();
+      populateSuggestions();
       console.log("Node added:", editorSelectedNode);
-      
       // Show the node panel immediately for editing
-      showNodePanel(editorSelectedNode);
-      
+      showNodePanel(editorSelectedNode);    
       // Redraw to show the new node
       redraw();
+
     } else if (editorMode === "polygon") {
       rectStartPos = canvasPosToPos(event.pageX, event.pageY);
       rectEndPos = null;
