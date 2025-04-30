@@ -108,104 +108,6 @@ function fileToDataURL(file) {
   });
 }
 
-// Save map data to local storage
-function saveMapToLocalStorage() {
-  // Prepare data for export
-  const exportData = {
-    layers: {},
-    backgroundImages: {}
-  };
-  
-  for (const layer of loadedLayers) {
-    if (nodeGraph[layer] && nodeGraph[layer].length > 0) {
-      // Clean up the data by removing nulls
-      const cleanNodes = nodeGraph[layer].filter(node => node !== null);
-      
-      exportData.layers[layer] = {
-        metadata: layerData[layer] || {},
-        nodes: cleanNodes,
-        namedNodes: namedNodes[layer] || [],
-        areas: areas[layer] || []
-      };
-      
-      // Add background image info but not the actual image data
-      if (backgroundImages[layer]) {
-        exportData.backgroundImages[layer] = {
-          x: backgroundImages[layer].x,
-          y: backgroundImages[layer].y,
-          opacity: backgroundImages[layer].opacity,
-          width: backgroundImages[layer].width,
-          height: backgroundImages[layer].height
-        };
-      }
-    }
-  }
-  
-  // Save to local storage
-  try {
-    localStorage.setItem('txstNavigationMapData', JSON.stringify(exportData));
-    console.log("Map saved to local storage successfully");
-    return true;
-  } catch (e) {
-    console.error("Error saving to local storage:", e);
-    return false;
-  }
-}
-
-// Load map data from local storage
-function loadMapFromLocalStorage() {
-  try {
-    const savedData = localStorage.getItem('txstNavigationMapData');
-    if (!savedData) {
-      console.log("No saved map data found in local storage");
-      return false;
-    }
-    
-    const importData = JSON.parse(savedData);
-    console.log("Loading saved map data:", importData);
-    
-    // Reset current data
-    nodeGraph = {};
-    namedNodes = {};
-    areas = {};
-    loadedLayers = [];
-    
-    // Load each layer
-    for (const layerName in importData.layers) {
-      const layerData = importData.layers[layerName];
-      
-      // Add to loaded layers
-      if (!loadedLayers.includes(layerName)) {
-        loadedLayers.push(layerName);
-      }
-      
-      // Set nodes
-      nodeGraph[layerName] = layerData.nodes || [];
-      
-      // Set named nodes
-      namedNodes[layerName] = layerData.namedNodes || [];
-      
-      // Set areas
-      areas[layerName] = layerData.areas || [];
-    }
-    
-    // Restore current layer
-    if (loadedLayers.length > 0 && !view.layer) {
-      view.layer = loadedLayers[0];
-    }
-    
-    // Update UI
-    checkMapSetup();
-    redraw();
-    
-    console.log("Map loaded from local storage successfully");
-    return true;
-  } catch (e) {
-    console.error("Error loading from local storage:", e);
-    return false;
-  }
-}
-
 // Export map to file
 function exportMapToFile() {
   // Prepare data for export
@@ -226,14 +128,16 @@ function exportMapToFile() {
         areas: areas[layer] || []
       };
       
-      // Add background image info but not the actual image data
+      // Add background image info but not the actual image object
       if (backgroundImages[layer]) {
+        // Store a copy without the Image object
         exportData.backgroundImages[layer] = {
           x: backgroundImages[layer].x,
           y: backgroundImages[layer].y,
-          opacity: backgroundImages[layer].opacity,
           width: backgroundImages[layer].width,
-          height: backgroundImages[layer].height
+          height: backgroundImages[layer].height,
+          opacity: backgroundImages[layer].opacity || 0.5,
+          dataURL: backgroundImages[layer].dataURL || null
         };
       }
     }
@@ -258,58 +162,217 @@ function exportMapToFile() {
 function importMapFromFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
-    reader.onload = function(e) {
+
+    reader.onload = e => {
       try {
         const importData = JSON.parse(e.target.result);
-        console.log("Parsing imported map data:", importData);
         
         // Reset current data
         nodeGraph = {};
         namedNodes = {};
         areas = {};
+        layerData = {};
+        backgroundImages = {};
         loadedLayers = [];
-        
+
         // Load each layer
         for (const layerName in importData.layers) {
-          const layerData = importData.layers[layerName];
+          const layer = importData.layers[layerName];
           
           // Add to loaded layers
-          if (!loadedLayers.includes(layerName)) {
-            loadedLayers.push(layerName);
-          }
+          loadedLayers.push(layerName);
           
-          // Set nodes
-          nodeGraph[layerName] = layerData.nodes || [];
-          
-          // Set named nodes
-          namedNodes[layerName] = layerData.namedNodes || [];
-          
-          // Set areas
-          areas[layerName] = layerData.areas || [];
+          // Set data
+          nodeGraph[layerName] = layer.nodes || [];
+          namedNodes[layerName] = layer.namedNodes || [];
+          areas[layerName] = layer.areas || [];
+          layerData[layerName] = layer.metadata || {};
         }
         
-        // Restore current layer
+        // Load background images if present
+        if (importData.backgroundImages) {
+          for (const layerName in importData.backgroundImages) {
+            const bgData = importData.backgroundImages[layerName];
+            
+            if (bgData && bgData.dataURL) {
+              // Create a new Image object and set its source to the data URL
+              const img = new Image();
+              img.onload = () => {
+                console.log(`Background image loaded for layer ${layerName}`);
+                // Only redraw if we're currently viewing this layer
+                if (view.layer === layerName) {
+                  redraw();
+                }
+              };
+              img.onerror = (err) => {
+                console.error(`Error loading background image for layer ${layerName}:`, err);
+              };
+              
+              // Store the background image data
+              backgroundImages[layerName] = {
+                image: img,  // This will be populated once the image loads
+                x: bgData.x || 0,
+                y: bgData.y || 0,
+                width: bgData.width || 0,
+                height: bgData.height || 0,
+                opacity: bgData.opacity || 0.5,
+                dataURL: bgData.dataURL
+              };
+              
+              // Set the source last to trigger the load
+              img.src = bgData.dataURL;
+            }
+          }
+        }
+        
+        // Restore view layer
         if (loadedLayers.length > 0) {
           view.layer = loadedLayers[0];
         }
         
         // Update UI
         checkMapSetup();
+        updateBackgroundImageUI();
         redraw();
         
-        console.log("Map imported successfully");
+        console.log("Map loaded from file successfully");
         resolve(true);
-      } catch (e) {
-        console.error("Error parsing imported map data:", e);
-        reject(e);
+      } catch (err) {
+        console.error("Error parsing imported map data:", err);
+        reject(err);
       }
     };
-    
-    reader.onerror = function() {
-      reject(new Error('Error reading file'));
-    };
-    
+
+    reader.onerror = () => reject(new Error("Error reading file"));
     reader.readAsText(file);
   });
+}
+
+// Save map data to local storage
+function saveMapToLocalStorage() {
+  // Prepare data for export
+  const exportData = {
+    layers: {},
+    backgroundImages: {}
+  };
+  
+  for (const layer of loadedLayers) {
+    if (nodeGraph[layer] && nodeGraph[layer].length > 0) {
+      // Clean up the data by removing nulls
+      const cleanNodes = nodeGraph[layer].filter(node => node !== null);
+      
+      exportData.layers[layer] = {
+        metadata: layerData[layer] || {},
+        nodes: cleanNodes,
+        namedNodes: namedNodes[layer] || [],
+        areas: areas[layer] || []
+      };
+      
+      // Add background image info but not the actual image object
+      if (backgroundImages[layer]) {
+        exportData.backgroundImages[layer] = {
+          x: backgroundImages[layer].x,
+          y: backgroundImages[layer].y,
+          width: backgroundImages[layer].width,
+          height: backgroundImages[layer].height,
+          opacity: backgroundImages[layer].opacity || 0.5,
+          dataURL: backgroundImages[layer].dataURL || null
+        };
+      }
+    }
+  }
+  
+  // Save to local storage
+  try {
+    localStorage.setItem('txstNavigationMapData', JSON.stringify(exportData));
+    console.log("Map saved to local storage successfully");
+    return true;
+  } catch (e) {
+    console.error("Error saving to local storage:", e);
+    return false;
+  }
+}
+
+// Load map data from local storage
+function loadMapFromLocalStorage() {
+  try {
+    const savedData = localStorage.getItem('txstNavigationMapData');
+    if (!savedData) {
+      console.log("No saved map data found in local storage");
+      return false;
+    }
+
+    const importData = JSON.parse(savedData);
+    console.log("Loading saved map data:", importData);
+
+    // Reset current data
+    nodeGraph = {};
+    namedNodes = {};
+    areas = {};
+    backgroundImages = {};
+    loadedLayers = [];
+
+    // Load each layer
+    for (const layerName in importData.layers) {
+      const layer = importData.layers[layerName];
+
+      // Add to loaded layers
+      loadedLayers.push(layerName);
+
+      // Set data
+      nodeGraph[layerName] = layer.nodes || [];
+      namedNodes[layerName] = layer.namedNodes || [];
+      areas[layerName] = layer.areas || [];
+      layerData[layerName] = layer.metadata || {};
+    }
+    
+    // Load background images if present
+    if (importData.backgroundImages) {
+      for (const layerName in importData.backgroundImages) {
+        const bgData = importData.backgroundImages[layerName];
+        
+        if (bgData && bgData.dataURL) {
+          // Create a new Image object and set its source to the data URL
+          const img = new Image();
+          img.onload = () => {
+            console.log(`Background image loaded for layer ${layerName}`);
+            // Only redraw if we're currently viewing this layer
+            if (view.layer === layerName) {
+              redraw();
+            }
+          };
+          
+          // Store the background image data
+          backgroundImages[layerName] = {
+            image: img,  // This will be populated once the image loads
+            x: bgData.x || 0,
+            y: bgData.y || 0,
+            width: bgData.width || 0,
+            height: bgData.height || 0,
+            opacity: bgData.opacity || 0.5,
+            dataURL: bgData.dataURL
+          };
+          
+          // Set the source last to trigger the load
+          img.src = bgData.dataURL;
+        }
+      }
+    }
+
+    // Restore view layer
+    if (loadedLayers.length > 0) {
+      view.layer = loadedLayers[0];
+    }
+
+    // Update UI
+    checkMapSetup();
+    updateBackgroundImageUI();
+    redraw();
+
+    console.log("Map loaded from local storage successfully");
+    return true;
+  } catch (e) {
+    console.error("Error loading from local storage:", e);
+    return false;
+  }
 }

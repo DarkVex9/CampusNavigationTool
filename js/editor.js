@@ -951,8 +951,10 @@ function quantizeNodePositions() {
 function exportMapData() {
   // Prepare data for export
   const exportData = {
-    layers: {}
+    layers: {},
+    backgroundImages: {} 
   };
+  
   
   for (const layer of loadedLayers) {
     if (nodeGraph[layer] && nodeGraph[layer].length > 0) {
@@ -965,6 +967,11 @@ function exportMapData() {
         namedNodes: namedNodes[layer] || [],
         areas: areas[layer] || []
       };
+    }
+
+    if (backgroundImages[layer])  {
+      const {image, ...rest} = backgroundImages[layer];
+      exportData.backgroundImages[layer] = rest;
     }
   }
   
@@ -1134,4 +1141,40 @@ document.getElementById("addFloorBtn").addEventListener("click", () => {
   checkMapSetup();
   view.layer = newLayerName;
   redraw();
+});
+
+// Enable image to Base64 conversion when user uploads background image
+document.getElementById("uploadBgImage").addEventListener("change", async function (event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function () {
+    const dataURL = reader.result;
+
+    const img = new Image();
+    img.onload = () => {
+      backgroundImages[view.layer] = {
+        image: img,
+        x: 0,
+        y: 0,
+        width: img.width,
+        height: img.height,
+        opacity: 0.5,
+        dataURL: dataURL // Store the Base64 data URL for saving
+      };
+      
+      console.log("Background image loaded with dimensions:", img.width, "x", img.height);
+      
+      // Show background image controls
+      const bgControls = document.getElementById("backgroundControls");
+      if (bgControls) {
+        bgControls.style.display = "block";
+      }
+      
+      redraw();
+    };
+    img.src = dataURL;
+  };
+  reader.readAsDataURL(file);
 });

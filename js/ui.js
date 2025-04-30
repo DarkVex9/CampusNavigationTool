@@ -864,40 +864,17 @@ if (saveNodeDataBtn) {
 }
 
 function drawBackgroundImage() {
-  if (!backgroundImages[view.layer]) return;
-  
-  const bgData = backgroundImages[view.layer];
-  
-  // Apply opacity
-  ctx.globalAlpha = bgData.opacity;
-  
-  // Calculate position on canvas
-  const [canvasX, canvasY] = posToCanvasPos(bgData.x, bgData.y);
-  const width = bgData.width * view.zoom;
-  const height = bgData.height * view.zoom;
-  
-  // Draw the image
-  ctx.drawImage(bgData.image, canvasX, canvasY, width, height);
-  
-  // Draw a border around the image if in bgmove mode
-  if (editorMode === "bgmove") {
-    ctx.globalAlpha = 1.0;
-    ctx.strokeStyle = "#3b82f6"; // Blue border
-    ctx.lineWidth = 2;
-    ctx.strokeRect(canvasX, canvasY, width, height);
-    
-    // Draw handles at corners
-    const handleSize = 8;
-    ctx.fillStyle = "#3b82f6";
-    ctx.fillRect(canvasX - handleSize/2, canvasY - handleSize/2, handleSize, handleSize);
-    ctx.fillRect(canvasX + width - handleSize/2, canvasY - handleSize/2, handleSize, handleSize);
-    ctx.fillRect(canvasX - handleSize/2, canvasY + height - handleSize/2, handleSize, handleSize);
-    ctx.fillRect(canvasX + width - handleSize/2, canvasY + height - handleSize/2, handleSize, handleSize);
+    const bg = backgroundImages[view.layer];
+    if (!bg || !bg.image) return;
+    // Wait until the image really loaded – avoids “broken state” errors
+    if (!bg.image.complete || !bg.image.naturalWidth) {
+      bg.image.onload = () => { if (view.layer === bg.imageLayer) redraw(); };
+      return;
+    }
+    ctx.globalAlpha = bg.opacity ?? 0.5;
+    ctx.drawImage(bg.image, bg.x, bg.y, bg.width, bg.height);
+    ctx.globalAlpha = 1;
   }
-  
-  // Reset opacity
-  ctx.globalAlpha = 1.0;
-}
 
 // Update background image UI
 function updateBackgroundImageUI() {
