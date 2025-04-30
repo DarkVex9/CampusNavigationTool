@@ -80,7 +80,14 @@
         class="w-full mt-2 p-1 bg-blue-100 rounded border border-blue-300 text-xs"
       >
         ➕ Add New Floor
-      </button>      
+      </button>
+      
+      <button 
+        id="deleteFloorBtn"
+        class="w-full mt-2 p-1 bg-red-100 rounded border border-red-300 text-xs text-red-700"
+      >
+        🗑️ Delete Current Floor
+      </button>
       
       <div class="mt-6">
         <button 
@@ -350,5 +357,18 @@
   <script src="js/editor.js"></script>
   <script src="js/pathfinding.js"></script>
   <script src="js/main.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("deleteFloorBtn");
+      if (btn) {
+        btn.addEventListener("click", () => {
+          console.log("✅ Delete Floor Button Clicked from inline script");
+        });
+      } else {
+        console.log("❌ deleteFloorBtn not found in DOM");
+      }
+    });
+  </script>
 
 </html>

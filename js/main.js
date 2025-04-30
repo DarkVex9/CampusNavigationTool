@@ -73,44 +73,99 @@ function setupEventListeners() {
   document.addEventListener("mousemove", handleMouseMove);
   document.addEventListener("mouseup", handleMouseUp);
   document.addEventListener("wheel", handleScroll);
-  
+
   // Layer selection dropdown
   const layerSelect = document.getElementById("layerSelect");
   if (layerSelect) {
-      layerSelect.addEventListener("change", function() {
-          view.layer = this.value;
-          console.log("Layer changed to:", view.layer);
-          updateBackgroundImageUI(); // Add this line
-          redraw();
-      });
+    layerSelect.addEventListener("change", function () {
+      view.layer = this.value;
+      console.log("Layer changed to:", view.layer);
+      updateBackgroundImageUI();
+      redraw();
+    });
   }
-  
+
   // Add listeners for node panel inputs
   setupNodePanelListeners();
-  
+
   // Add listeners for editor buttons
   setupEditorButtonListeners();
-  
+
   // Handle window resize
-  window.addEventListener("resize", function() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      redraw();
+  window.addEventListener("resize", function () {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    redraw();
   });
-  
-  // Setup toggle editor button with proper functionality
-  const toggleEditorBtn = document.getElementById('toggleEditor');
+
+  // Setup toggle editor button
+  const toggleEditorBtn = document.getElementById("toggleEditor");
   if (toggleEditorBtn) {
-    toggleEditorBtn.addEventListener('click', function() {
-      const editorTools = document.getElementById('editorTools');
+    toggleEditorBtn.addEventListener("click", function () {
+      const editorTools = document.getElementById("editorTools");
       if (editorTools) {
-        const isVisible = editorTools.style.display !== 'none';
-        editorTools.style.display = isVisible ? 'none' : 'block';
-        this.textContent = isVisible ? 'Show Editor Tools' : 'Hide Editor Tools';
+        const isVisible = editorTools.style.display !== "none";
+        editorTools.style.display = isVisible ? "none" : "block";
+        this.textContent = isVisible ? "Show Editor Tools" : "Hide Editor Tools";
       }
     });
   }
+
+  // DELETE FLOOR button logic
+  const deleteFloorBtn = document.getElementById("deleteFloorBtn");
+  if (deleteFloorBtn) {
+    deleteFloorBtn.addEventListener("click", function () {
+      console.log("🗑️ Delete Floor button clicked");
   
+      if (loadedLayers.length <= 1) {
+        alert("At least one floor must remain.");
+        return;
+      }
+  
+      const currentLayer = view.layer;
+      if (!confirm(`Are you sure you want to delete floor "${currentLayer}"? This cannot be undone.`)) return;
+  
+      console.log("Current layer:", currentLayer);
+      console.log("Loaded layers before delete:", [...loadedLayers]);
+  
+      const index = loadedLayers.indexOf(currentLayer);
+      if (index !== -1) {
+        const deletedLayer = loadedLayers.splice(index, 1)[0];
+        delete nodeGraph[deletedLayer];
+        delete namedNodes[deletedLayer];
+        delete areas[deletedLayer];
+        delete layerData[deletedLayer];
+        delete backgroundImages[deletedLayer];
+  
+        const select = document.getElementById("layerSelect");
+        if (select) {
+          const optionToRemove = [...select.options].find(opt => opt.value === deletedLayer);
+          if (optionToRemove) {
+            optionToRemove.remove();
+            console.log("Removed dropdown option for:", deletedLayer);
+          } else {
+            console.warn("No option found for deleted layer:", deletedLayer);
+          }
+        }
+  
+        if (loadedLayers.length > 0) {
+          view.layer = loadedLayers[0];
+          if (select) select.value = view.layer;
+        } else {
+          view.layer = "outside";
+        }
+  
+        console.log("Deleted layer:", deletedLayer);
+        console.log("Remaining layers:", loadedLayers);
+        redraw();
+        populateSuggestions();
+        alert(`Floor "${deletedLayer}" deleted.`);
+      } else {
+        console.warn("Layer not found in loadedLayers:", currentLayer);
+      }
+    });
+  }
+
   console.log("Event listeners initialized");
 }
 
@@ -160,9 +215,6 @@ function setupSaveAreaButtonListener() {
     }
   }
 
-
-// Call init when the page loads
-window.addEventListener("load", init);
 
 function setupNodePanelListeners() {
   const nodeNameInput = document.getElementById("nodeName");
@@ -291,3 +343,5 @@ document.getElementById('loadSavedMap').addEventListener('click', function() {
     alert('No saved map found or error loading map.');
   }
 });
+
+document.addEventListener("DOMContentLoaded", init);
