@@ -1203,3 +1203,30 @@ document.getElementById("uploadBgImage").addEventListener("change", async functi
   };
   reader.readAsDataURL(file);
 });
+
+function handleFloorChangeIndicatorClick(event) {
+  const mouseX = event.pageX;
+  const mouseY = event.pageY;
+
+  for (const indicator of (window.floorChangeIndicators || [])) {
+    const dx = mouseX - indicator.x;
+    const dy = mouseY - indicator.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= indicator.radius) {
+      // Perform floor switch
+      view.layer = indicator.toLayer;
+      view.x = -indicator.toNode.x;
+      view.y = -indicator.toNode.y;
+
+      // Sync dropdown
+      const layerSelect = document.getElementById("layerSelect");
+      if (layerSelect) layerSelect.value = indicator.toLayer;
+
+      redraw();
+      return true;
+    }
+  }
+
+  return false;
+}

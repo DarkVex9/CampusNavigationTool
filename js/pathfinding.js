@@ -48,79 +48,61 @@ function findPath(sourceNode, destinationNode, userPreferences = {}) {
     
     // Process each connection from the current node
     for (const connection of current.connections || []) {
-      let neighbor;
-      let weight;
-      let isAvoidedType = false;
-      
-      // Handle cross-layer connections
-      if (connection.layer !== undefined) {
-        // This is a layer change connection
-        neighbor = nodeGraph[connection.layer][connection.id];
-        
-        // FIX: Check connection flags properly
-        // Check if the connection is stairs or elevator
-        const isStairs = connection.flags && connection.flags.includes("stairs");
-        const isElevator = connection.flags && connection.flags.includes("elevator");
-        
-        // FIX: Apply preference penalties more effectively
-        if ((isStairs && preferences.avoidStairs) ||
-            (isElevator && preferences.avoidElevators)) {
-          weight = 2000; // Much higher penalty for avoided types
-          isAvoidedType = true;
-          console.log(`Applying high penalty for ${isStairs ? 'stairs' : 'elevator'}`);
-        } else {
-          weight = 10; // Normal layer change cost
-        }
-      } else {
-        // Normal connection within the same layer
-        neighbor = nodeGraph[current.layer][connection.id];
-        weight = connection.distance || 1;
-      }
-      
-      // Skip if neighbor is null or already in closed set
-      if (!neighbor || closedSet.has(getNodeKey(neighbor))) {
-        continue;
-      }
-      
+      const neighbor = connection.layer !== undefined
+        ? nodeGraph[connection.layer]?.[connection.id]
+        : nodeGraph[current.layer]?.[connection.id];
+    
+      if (!neighbor || closedSet.has(getNodeKey(neighbor))) continue;
+    
       // Skip nodes with endpoint constraint (except the destination)
-      if (neighbor !== destinationNode && 
-          neighbor.constraints && 
-          neighbor.constraints.includes("endpoint")) {
+      if (
+        neighbor !== destinationNode &&
+        neighbor.constraints &&
+        neighbor.constraints.includes("endpoint")
+      ) {
         continue;
       }
-      
-      // FIX: Enhanced checking of node types to respect preferences
-      if (neighbor !== destinationNode) {
-        // Apply penalties for node types being avoided
-        if ((neighbor.type === "stairs" && preferences.avoidStairs) ||
-            (neighbor.type === "elevator" && preferences.avoidElevators)) {
-          weight += 1000; // Additional penalty for avoided node types
-          isAvoidedType = true;
-          console.log(`Applying node type penalty for ${neighbor.type}`);
-        }
+    
+      let weight = connection.distance || 1;
+      let isAvoidedType = false;
+    
+      // Determine if connection or node is stairs/elevator
+      const isStairs =
+        (connection.flags?.includes("stairs")) ||
+        (neighbor?.type === "stairs") ||
+        (current?.type === "stairs");
+    
+      const isElevator =
+        (connection.flags?.includes("elevator")) ||
+        (neighbor?.type === "elevator") ||
+        (current?.type === "elevator");
+    
+      // Apply penalty or skip based on preferences
+      if (preferences.avoidStairs && isStairs) {
+        weight += 1000;
+        isAvoidedType = true;
+        console.log("⛔ Penalty: avoiding stairs");
       }
-      
-      // Calculate tentative g score
+    
+      if (preferences.avoidElevators && isElevator) {
+        weight += 1000;
+        isAvoidedType = true;
+        console.log("⛔ Penalty: avoiding elevators");
+      }
+    
+      // Compute score
       const tentativeGScore = gScore.get(getNodeKey(current)) + weight;
-      
-      // If this path is better than previous ones
+    
       if (tentativeGScore < gScore.get(getNodeKey(neighbor))) {
-        // Record the path
         cameFrom.set(getNodeKey(neighbor), current);
         gScore.set(getNodeKey(neighbor), tentativeGScore);
-        
-        // Calculate f score: g + h
-        const neighborFScore = tentativeGScore + heuristic(neighbor, destinationNode);
+    
+        const neighborFScore =
+          tentativeGScore + heuristic(neighbor, destinationNode);
         fScore.set(getNodeKey(neighbor), neighborFScore);
-        
-        // Add to open set if not already there
+    
         if (!openSet.contains(neighbor)) {
           openSet.enqueue(neighbor, neighborFScore);
-          
-          // Debug log for avoided types
-          if (isAvoidedType) {
-            console.log(`Added avoided type node to open set with high penalty: ${neighbor.type || 'regular'}, fscore: ${neighborFScore}`);
-          }
         }
       }
     }
