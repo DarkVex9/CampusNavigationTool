@@ -230,12 +230,15 @@ function importMapFromFile(file) {
           view.layer = loadedLayers[0];
         }
         
+        // IMPORTANT: Enable node drawing after loading map
+        drawNodes = true;
+        
         // Update UI
         checkMapSetup();
         updateBackgroundImageUI();
         redraw();
         
-        console.log("Map loaded from file successfully");
+        console.log("Map loaded from file successfully with nodes visible");
         resolve(true);
       } catch (err) {
         console.error("Error parsing imported map data:", err);
@@ -364,12 +367,15 @@ function loadMapFromLocalStorage() {
       view.layer = loadedLayers[0];
     }
 
+    // IMPORTANT: Enable node drawing after loading map
+    drawNodes = true;
+
     // Update UI
     checkMapSetup();
     updateBackgroundImageUI();
     redraw();
 
-    console.log("Map loaded from local storage successfully");
+    console.log("Map loaded from local storage successfully with nodes visible");
     return true;
   } catch (e) {
     console.error("Error loading from local storage:", e);

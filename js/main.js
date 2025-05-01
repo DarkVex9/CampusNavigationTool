@@ -534,13 +534,6 @@ function fixBackgroundImageGridAlignment() {
   
   // Create a dedicated section for grid controls
   const gridSection = document.createElement('div');
-  gridSection.className = 'mt-3 p-2 bg-gray-100 rounded';
-  gridSection.innerHTML = `
-    <h4 class="text-xs font-bold mb-1">Grid Alignment</h4>
-    <div id="bgCoordinates" class="text-xs text-center mb-2">Position: (0, 0)</div>
-    <button id="alignBgToGrid" class="w-full p-1 bg-blue-100 rounded border border-blue-300 text-xs">Snap to Grid</button>
-    <div class="text-xs mt-1 text-gray-500">Hold Shift while dragging to snap</div>
-  `;
   bgControlsDiv.appendChild(gridSection);
   
   // Add event listener for grid align button
