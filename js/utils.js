@@ -120,6 +120,8 @@ function exportMapToFile() {
     if (nodeGraph[layer] && nodeGraph[layer].length > 0) {
       // Clean up the data by removing nulls
       const cleanNodes = nodeGraph[layer].filter(node => node !== null);
+
+      cleanNodes.forEach((node, idx) => node.id = idx);
       
       exportData.layers[layer] = {
         metadata: layerData[layer] || {},
