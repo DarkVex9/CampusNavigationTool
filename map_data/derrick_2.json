@@ -1,13 +1,13 @@
 {
   "layers": {
-    "outside": {
+    "Derrick 2nd Floor": {
       "metadata": {},
       "nodes": [
         {
           "id": 0,
           "x": 883.1563994507309,
           "y": 706.6271715014936,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 1,
@@ -22,7 +22,7 @@
           "id": 1,
           "x": 912.2188753032749,
           "y": 707.3629303838366,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 2,
@@ -49,7 +49,7 @@
           "id": 2,
           "x": 944.5922661263618,
           "y": 706.2592920603222,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 4,
@@ -72,7 +72,7 @@
           "id": 3,
           "x": 946.0637838910476,
           "y": 776.8921447652392,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 2,
@@ -87,7 +87,7 @@
           "id": 4,
           "x": 1075.1894677422238,
           "y": 706.9950509426651,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 6,
@@ -114,7 +114,7 @@
           "id": 5,
           "x": 1071.5106733305095,
           "y": 730.171455736466,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 4,
@@ -129,7 +129,7 @@
           "id": 6,
           "x": 1104.251943594768,
           "y": 692.2798732958073,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 8,
@@ -156,7 +156,7 @@
           "id": 7,
           "x": 1134.0501783296547,
           "y": 691.176234972293,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 6,
@@ -171,7 +171,7 @@
           "id": 8,
           "x": 1103.1483052712535,
           "y": 675.3574190019209,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 10,
@@ -194,7 +194,7 @@
           "id": 9,
           "x": 1077.028864948081,
           "y": 676.8289367666067,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 8,
@@ -209,7 +209,7 @@
           "id": 10,
           "x": 1102.41254638891,
           "y": 610.9785167969184,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 12,
@@ -232,7 +232,7 @@
           "id": 11,
           "x": 1130.7392633591116,
           "y": 610.9785167969185,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 10,
@@ -251,7 +251,7 @@
           "id": 12,
           "x": 1100.0165905705628,
           "y": 573.3230966957624,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 14,
@@ -274,7 +274,7 @@
           "id": 13,
           "x": 1071.5106733305095,
           "y": 574.5584521209457,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 12,
@@ -289,7 +289,7 @@
           "id": 14,
           "x": 1104.251943594768,
           "y": 478.9097974163707,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 43,
@@ -312,7 +312,7 @@
           "id": 15,
           "x": 1129.2677455944252,
           "y": 478.90979741637057,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 14,
@@ -331,7 +331,7 @@
           "id": 16,
           "x": 1181.1387467995992,
           "y": 548.8068912389448,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 15,
@@ -350,7 +350,7 @@
           "id": 17,
           "x": 910.7473575385889,
           "y": 638.2015954436051,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 1,
@@ -373,7 +373,7 @@
           "id": 18,
           "x": 943.8565072440189,
           "y": 638.2015954436052,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 17,
@@ -388,7 +388,7 @@
           "id": 19,
           "x": 880.9491228037023,
           "y": 617.2324672968331,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 81,
@@ -407,7 +407,7 @@
           "id": 20,
           "x": 910.7473575385889,
           "y": 532.6201958274012,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 81,
@@ -430,7 +430,7 @@
           "id": 21,
           "x": 939.4419539499617,
           "y": 534.4595930332584,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 20,
@@ -445,7 +445,7 @@
           "id": 22,
           "x": 911.1152369797607,
           "y": 374.7999155648524,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 27,
@@ -468,7 +468,7 @@
           "id": 23,
           "x": 936.8667978617616,
           "y": 374.432036123681,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 22,
@@ -483,7 +483,7 @@
           "id": 24,
           "x": 910.3794780974174,
           "y": 463.0909814459986,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 20,
@@ -506,7 +506,7 @@
           "id": 25,
           "x": 879.1097255978449,
           "y": 463.45886088717003,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 24,
@@ -521,7 +521,7 @@
           "id": 26,
           "x": 881.3170022448735,
           "y": 445.4327682697693,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 27,
@@ -536,7 +536,7 @@
           "id": 27,
           "x": 910.0115986562463,
           "y": 445.0648888285979,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 24,
@@ -559,7 +559,7 @@
           "id": 28,
           "x": 910.7473575385892,
           "y": 354.1986668592516,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 22,
@@ -582,7 +582,7 @@
           "id": 29,
           "x": 880.9491228037023,
           "y": 353.8307874180802,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 28,
@@ -597,7 +597,7 @@
           "id": 30,
           "x": 909.5659634207958,
           "y": 238.51817253438864,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 42,
@@ -624,7 +624,7 @@
           "id": 31,
           "x": 910.0115986562463,
           "y": 206.67901094950324,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 30,
@@ -643,7 +643,7 @@
           "id": 32,
           "x": 1007.131771125507,
           "y": 239.05240177259017,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 40,
@@ -662,7 +662,7 @@
           "id": 33,
           "x": 1105.7234613594537,
           "y": 240.15604009610448,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 38,
@@ -689,7 +689,7 @@
           "id": 34,
           "x": 1133.3144194473118,
           "y": 242.36331674313314,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 33,
@@ -704,7 +704,7 @@
           "id": 35,
           "x": 1105.4753665079766,
           "y": 188.7826584379527,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 33,
@@ -719,7 +719,7 @@
           "id": 36,
           "x": 1105.7234613594537,
           "y": 259.6536504781909,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 33,
@@ -742,7 +742,7 @@
           "id": 37,
           "x": 1139.5683699472263,
           "y": 260.3894093605338,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 36,
@@ -757,7 +757,7 @@
           "id": 38,
           "x": 1070.0391555658236,
           "y": 239.78816065493305,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 32,
@@ -780,7 +780,7 @@
           "id": 39,
           "x": 1067.0961200364522,
           "y": 159.22256303838716,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 38,
@@ -795,7 +795,7 @@
           "id": 40,
           "x": 940.4990270661401,
           "y": 237.911641874676,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 30,
@@ -818,7 +818,7 @@
           "id": 41,
           "x": 939.8098333911331,
           "y": 190.49231553795977,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 40,
@@ -833,7 +833,7 @@
           "id": 42,
           "x": 803.326560716528,
           "y": 237.21300456673293,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 48,
@@ -852,7 +852,7 @@
           "id": 43,
           "x": 1104.251943594768,
           "y": 459.7800664754556,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 36,
@@ -879,7 +879,7 @@
           "id": 44,
           "x": 1135.153816653169,
           "y": 461.9873431224843,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 43,
@@ -894,7 +894,7 @@
           "id": 45,
           "x": 1061.945807860052,
           "y": 460.147945916627,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 43,
@@ -909,7 +909,7 @@
           "id": 46,
           "x": 911.1152369797605,
           "y": 183.50260615570227,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 31,
@@ -928,7 +928,7 @@
           "id": 47,
           "x": 910.0115986562463,
           "y": 150.39345645027242,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 46,
@@ -943,7 +943,7 @@
           "id": 48,
           "x": 702.1597143943814,
           "y": 235.37360736087564,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 49,
@@ -966,7 +966,7 @@
           "id": 49,
           "x": 700.6881966296955,
           "y": 202.26445765544582,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 50,
@@ -989,7 +989,7 @@
           "id": 50,
           "x": 674.2008768653517,
           "y": 201.1608193319315,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 51,
@@ -1012,7 +1012,7 @@
           "id": 51,
           "x": 657.2784225714653,
           "y": 200.79293989076004,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 52,
@@ -1035,7 +1035,7 @@
           "id": 52,
           "x": 620.8583578954925,
           "y": 201.1608193319315,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 53,
@@ -1058,7 +1058,7 @@
           "id": 53,
           "x": 601.3607475134061,
           "y": 201.1608193319315,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 54,
@@ -1081,7 +1081,7 @@
           "id": 54,
           "x": 580.3916193666339,
           "y": 201.89657821427437,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 55,
@@ -1104,7 +1104,7 @@
           "id": 55,
           "x": 542.5000369259753,
           "y": 202.26445765544582,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 56,
@@ -1127,7 +1127,7 @@
           "id": 56,
           "x": 522.6345471027174,
           "y": 202.63233709661728,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 57,
@@ -1150,7 +1150,7 @@
           "id": 57,
           "x": 502.0332983971166,
           "y": 202.63233709661728,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 58,
@@ -1173,7 +1173,7 @@
           "id": 58,
           "x": 465.6132337211428,
           "y": 201.89657821427468,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 59,
@@ -1196,7 +1196,7 @@
           "id": 59,
           "x": 449.05865886842787,
           "y": 201.52869877310326,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 60,
@@ -1219,7 +1219,7 @@
           "id": 60,
           "x": 429.5610484863425,
           "y": 202.26445765544582,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 61,
@@ -1242,7 +1242,7 @@
           "id": 61,
           "x": 407.48828201605596,
           "y": 203.0002165377887,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 83,
@@ -1265,7 +1265,7 @@
           "id": 62,
           "x": 407.1204025748845,
           "y": 300.8561478893924,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 83,
@@ -1288,7 +1288,7 @@
           "id": 63,
           "x": 428.4574101628282,
           "y": 301.59190677173524,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 62,
@@ -1315,7 +1315,7 @@
           "id": 64,
           "x": 428.4574101628282,
           "y": 272.5294309191913,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 63,
@@ -1330,7 +1330,7 @@
           "id": 65,
           "x": 467.45263092700105,
           "y": 300.48826844822094,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 63,
@@ -1353,7 +1353,7 @@
           "id": 66,
           "x": 466.7168720446582,
           "y": 271.7936720368484,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 65,
@@ -1368,7 +1368,7 @@
           "id": 67,
           "x": 502.7690572794595,
           "y": 300.48826844822094,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 65,
@@ -1391,7 +1391,7 @@
           "id": 68,
           "x": 507.18361057351683,
           "y": 274.36882812504854,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 67,
@@ -1406,7 +1406,7 @@
           "id": 69,
           "x": 542.1321574848039,
           "y": 301.22402733056384,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 71,
@@ -1429,7 +1429,7 @@
           "id": 70,
           "x": 543.6036752494897,
           "y": 275.1045870073914,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 69,
@@ -1444,7 +1444,7 @@
           "id": 71,
           "x": 581.4952576901483,
           "y": 301.22402733056384,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 69,
@@ -1471,7 +1471,7 @@
           "id": 72,
           "x": 581.1273782489768,
           "y": 272.1615514780199,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 71,
@@ -1486,7 +1486,7 @@
           "id": 73,
           "x": 617.5474429249496,
           "y": 300.8561478893924,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 71,
@@ -1509,7 +1509,7 @@
           "id": 74,
           "x": 618.2832018072925,
           "y": 276.20822533090575,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 73,
@@ -1524,7 +1524,7 @@
           "id": 75,
           "x": 657.6463020126367,
           "y": 301.59190677173524,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 73,
@@ -1547,7 +1547,7 @@
           "id": 76,
           "x": 659.485699218494,
           "y": 276.20822533090575,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 75,
@@ -1562,7 +1562,7 @@
           "id": 77,
           "x": 673.8329974241802,
           "y": 301.9597862129067,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 75,
@@ -1585,7 +1585,7 @@
           "id": 78,
           "x": 701.056076070867,
           "y": 301.9597862129067,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 77,
@@ -1604,7 +1604,7 @@
           "id": 79,
           "x": 701.4239555120384,
           "y": 268.8506365074769,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 48,
@@ -1627,7 +1627,7 @@
           "id": 80,
           "x": 731.9579491292682,
           "y": 270.6900337133341,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 79,
@@ -1642,7 +1642,7 @@
           "id": 81,
           "x": 910.3794780974174,
           "y": 617.232467296833,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 17,
@@ -1665,7 +1665,7 @@
           "id": 82,
           "x": 406.3846436925416,
           "y": 326.2398293302219,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 62,
@@ -1680,7 +1680,7 @@
           "id": 83,
           "x": 406.75252313371305,
           "y": 289.4518852130777,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 61,
@@ -1703,7 +1703,7 @@
           "id": 84,
           "x": 386.1512744281123,
           "y": 290.555523536592,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 83,
@@ -1718,7 +1718,7 @@
           "id": 85,
           "x": 426.98589239814237,
           "y": 320.72163771265025,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 63,
@@ -1733,7 +1733,7 @@
           "id": 86,
           "x": 525.2097031909175,
           "y": 317.77860218327874,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 89,
@@ -1748,7 +1748,7 @@
           "id": 87,
           "x": 586.6455698665484,
           "y": 318.88224050679304,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 71,
@@ -1763,7 +1763,7 @@
           "id": 88,
           "x": 676.0402740712088,
           "y": 317.4107227421073,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 77,
@@ -1778,7 +1778,7 @@
           "id": 89,
           "x": 524.841823749746,
           "y": 300.48826844822094,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 69,
@@ -1801,7 +1801,7 @@
           "id": 90,
           "x": 731.9579491292682,
           "y": 198.5856632437314,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 49,
@@ -1816,7 +1816,7 @@
           "id": 91,
           "x": 385.78339498694083,
           "y": 210.725684802389,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 61,
@@ -1831,7 +1831,7 @@
           "id": 92,
           "x": 911.1152369797603,
           "y": 690.4404760899499,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 93,
@@ -1846,7 +1846,7 @@
           "id": 93,
           "x": 884.6279172154166,
           "y": 689.3368377664357,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 94,
@@ -1865,7 +1865,7 @@
           "id": 94,
           "x": 842.689660921872,
           "y": 642.6161487376625,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 19,
@@ -1884,7 +1884,7 @@
           "id": 95,
           "x": 911.8509958621028,
           "y": 728.3320585306087,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 1,
@@ -1899,7 +1899,7 @@
           "id": 96,
           "x": 1105.3555819182816,
           "y": 809.265535588326,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 97,
@@ -1918,7 +1918,7 @@
           "id": 97,
           "x": 1104.2519435947672,
           "y": 706.6271715014936,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 4,
@@ -1941,7 +1941,7 @@
           "id": 98,
           "x": 930.6128473618464,
           "y": 805.954620617783,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 96,
@@ -1956,7 +1956,7 @@
           "id": 99,
           "x": 449.05865886842787,
           "y": 180.92745006750246,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 59,
@@ -1971,7 +1971,7 @@
           "id": 100,
           "x": 524.841823749745,
           "y": 181.66320894984534,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 56,
@@ -1986,7 +1986,7 @@
           "id": 101,
           "x": 603.2001447192622,
           "y": 180.55957062633104,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 53,
@@ -2001,7 +2001,7 @@
           "id": 102,
           "x": 676.0402740712078,
           "y": 180.55957062633104,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 50,
@@ -2016,7 +2016,7 @@
           "id": 103,
           "x": 657.2784225714643,
           "y": 223.96934468456124,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 51,
@@ -2031,7 +2031,7 @@
           "id": 104,
           "x": 617.91532236612,
           "y": 224.33722412573266,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 52,
@@ -2046,7 +2046,7 @@
           "id": 105,
           "x": 579.65586048429,
           "y": 223.96934468456124,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 54,
@@ -2061,7 +2061,7 @@
           "id": 106,
           "x": 542.1321574848029,
           "y": 223.96934468456124,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 55,
@@ -2076,7 +2076,7 @@
           "id": 107,
           "x": 503.13693672062993,
           "y": 222.49782691987548,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 57,
@@ -2091,7 +2091,7 @@
           "id": 108,
           "x": 465.24535427997137,
           "y": 222.12994747870403,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 58,
@@ -2106,7 +2106,7 @@
           "id": 109,
           "x": 427.72165128048425,
           "y": 222.12994747870403,
-          "layer": "outside",
+          "layer": "Derrick 2nd Floor",
           "connections": [
             {
               "id": 60,
@@ -2564,7 +2564,7 @@
     }
   },
   "backgroundImages": {
-    "outside": {
+    "Derrick 2nd Floor": {
       "x": 0,
       "y": 0,
       "opacity": 0.5,
