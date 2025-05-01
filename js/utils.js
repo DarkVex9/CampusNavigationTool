@@ -376,3 +376,10 @@ function loadMapFromLocalStorage() {
     return false;
   }
 }
+
+function snapToGrid(x, y, gridSize = 50) {
+  return [
+    Math.round(x / gridSize) * gridSize,
+    Math.round(y / gridSize) * gridSize
+  ];
+}

@@ -369,20 +369,17 @@ function handleMouseUp(event) {
 function handleMouseMove(event) {
   // Add this new condition for background image dragging
   if (isDraggingBgImage && backgroundImages[view.layer]) {
-    const deltaX = (event.pageX - bgImageDragStartX) / view.zoom;
-    const deltaY = (event.pageY - bgImageDragStartY) / view.zoom;
+    // Convert screen movement to world movement
+    const worldMovementX = event.movementX / view.zoom;
+    const worldMovementY = event.movementY / view.zoom;
     
-    // Update background image position
-    backgroundImages[view.layer].x += deltaX;
-    backgroundImages[view.layer].y += deltaY;
-    
-    // Update drag start position
-    bgImageDragStartX = event.pageX;
-    bgImageDragStartY = event.pageY;
+    // Update background position in world coordinates
+    backgroundImages[view.layer].x += worldMovementX;
+    backgroundImages[view.layer].y += worldMovementY;
     
     // Redraw
     redraw();
-    return; // Stop processing further
+    return;
   }
 
   updateSaveAreaButtonVisibility();

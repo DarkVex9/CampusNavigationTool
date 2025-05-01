@@ -864,17 +864,32 @@ if (saveNodeDataBtn) {
 }
 
 function drawBackgroundImage() {
-    const bg = backgroundImages[view.layer];
-    if (!bg || !bg.image) return;
-    // Wait until the image really loaded – avoids “broken state” errors
-    if (!bg.image.complete || !bg.image.naturalWidth) {
-      bg.image.onload = () => { if (view.layer === bg.imageLayer) redraw(); };
-      return;
-    }
-    ctx.globalAlpha = bg.opacity ?? 0.5;
-    ctx.drawImage(bg.image, bg.x, bg.y, bg.width, bg.height);
-    ctx.globalAlpha = 1;
-  }
+  const bg = backgroundImages[view.layer];
+  if (!bg || !bg.image) return;
+
+  const [canvasX, canvasY] = posToCanvasPos(bg.x, bg.y);
+  
+  // Apply zoom to width and height
+  const width = bg.width * view.zoom;
+  const height = bg.height * view.zoom;
+
+  ctx.globalAlpha = bg.opacity ?? 0.5;
+  ctx.drawImage(bg.image, canvasX, canvasY, width, height);
+  ctx.globalAlpha = 1.0;
+}
+
+function alignBackgroundToGrid() {
+  if (!backgroundImages[view.layer]) return;
+  
+  const gridSize = 50; // Make sure this matches your grid size
+  
+  // Snap to grid
+  backgroundImages[view.layer].x = Math.round(backgroundImages[view.layer].x / gridSize) * gridSize;
+  backgroundImages[view.layer].y = Math.round(backgroundImages[view.layer].y / gridSize) * gridSize;
+  
+  console.log(`Background aligned to grid at (${backgroundImages[view.layer].x}, ${backgroundImages[view.layer].y})`);
+  redraw();
+}
 
 // Update background image UI
 function updateBackgroundImageUI() {

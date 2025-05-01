@@ -395,3 +395,258 @@ document.getElementById('loadSavedMap').addEventListener('click', function() {
 });
 
 document.addEventListener("DOMContentLoaded", init);
+
+// Enhanced background image controls
+function setupEnhancedBackgroundControls() {
+  
+  // Add reset zoom button for background image
+  const bgControlsDiv = document.getElementById('backgroundControls');
+  
+  if (bgControlsDiv) {
+    // Add scaling controls
+    const scaleControlsDiv = document.createElement('div');
+    scaleControlsDiv.className = 'mb-2';
+    scaleControlsDiv.innerHTML = `
+      <label for="bgScale" class="block text-xs font-medium mb-1">Scale: <span id="scaleValue">100</span>%</label>
+      <input type="range" id="bgScale" min="10" max="200" value="100" class="w-full">
+    `;
+    bgControlsDiv.appendChild(scaleControlsDiv);
+    
+    // Add position controls
+    const positionControlsDiv = document.createElement('div');
+    positionControlsDiv.className = 'grid grid-cols-2 gap-2 mb-2';
+    positionControlsDiv.innerHTML = `
+      <button id="moveLeftBtn" class="w-full p-1 bg-gray-200 rounded border border-gray-300 text-xs">←</button>
+      <button id="moveRightBtn" class="w-full p-1 bg-gray-200 rounded border border-gray-300 text-xs">→</button>
+      <button id="moveUpBtn" class="w-full p-1 bg-gray-200 rounded border border-gray-300 text-xs">↑</button>
+      <button id="moveDownBtn" class="w-full p-1 bg-gray-200 rounded border border-gray-300 text-xs">↓</button>
+    `;
+    bgControlsDiv.appendChild(positionControlsDiv);
+    
+    // Add event listeners for the new controls
+    document.getElementById('bgScale').addEventListener('input', function() {
+      const scale = parseInt(this.value) / 100;
+      document.getElementById('scaleValue').textContent = this.value;
+      
+      if (backgroundImages[view.layer]) {
+        const bg = backgroundImages[view.layer];
+        // Store original dimensions if not already stored
+        if (!bg.originalWidth) {
+          bg.originalWidth = bg.width;
+          bg.originalHeight = bg.height;
+        }
+        
+        // Apply scaling
+        bg.width = bg.originalWidth * scale;
+        bg.height = bg.originalHeight * scale;
+        redraw();
+      }
+    });
+    
+    // Position adjustment buttons
+    const moveStep = 20; // Pixels to move per button click
+    
+    document.getElementById('moveLeftBtn').addEventListener('click', function() {
+      if (backgroundImages[view.layer]) {
+        backgroundImages[view.layer].x -= moveStep;
+        redraw();
+      }
+    });
+    
+    document.getElementById('moveRightBtn').addEventListener('click', function() {
+      if (backgroundImages[view.layer]) {
+        backgroundImages[view.layer].x += moveStep;
+        redraw();
+      }
+    });
+    
+    document.getElementById('moveUpBtn').addEventListener('click', function() {
+      if (backgroundImages[view.layer]) {
+        backgroundImages[view.layer].y -= moveStep;
+        redraw();
+      }
+    });
+    
+    document.getElementById('moveDownBtn').addEventListener('click', function() {
+      if (backgroundImages[view.layer]) {
+        backgroundImages[view.layer].y += moveStep;
+        redraw();
+      }
+    });
+  }
+  
+  // Fix for background image dragging if it's not working
+  function enhanceBgDragging() {
+    // Make sure the handleMouseMove function properly updates the background image position
+    const originalHandleMouseMove = handleMouseMove;
+    
+    window.handleMouseMove = function(event) {
+      if (isDraggingBgImage && backgroundImages[view.layer]) {
+        const deltaX = (event.pageX - bgImageDragStartX) / view.zoom;
+        const deltaY = (event.pageY - bgImageDragStartY) / view.zoom;
+        
+        // Update background image position
+        backgroundImages[view.layer].x += deltaX;
+        backgroundImages[view.layer].y += deltaY;
+        
+        // Update drag start position
+        bgImageDragStartX = event.pageX;
+        bgImageDragStartY = event.pageY;
+        
+        // Force redraw
+        redraw();
+        return; // Stop processing further
+      }
+      
+      // Call the original function for other cases
+      originalHandleMouseMove.call(this, event);
+    };
+  }
+  
+  // Apply the enhanced dragging
+  enhanceBgDragging();
+  
+  console.log("Enhanced background controls initialized");
+}
+
+// Call this function after the DOM is fully loaded
+document.addEventListener("DOMContentLoaded", function() {
+  // Wait a bit to ensure other initialization is complete
+  setTimeout(setupEnhancedBackgroundControls, 1000);
+});
+
+function fixBackgroundImageGridAlignment() {
+  if (window.bgGridAlignmentInitialized) return;
+  window.bgGridAlignmentInitialized = true;
+  
+  console.log("Initializing background grid alignment...");
+  
+  // Grid settings - should match the grid size in drawGridLines
+  const gridSize = 50;
+  
+  // Get background controls div
+  const bgControlsDiv = document.getElementById('backgroundControls');
+  if (!bgControlsDiv) {
+    console.error("Background controls div not found");
+    return;
+  }
+  
+  
+  // Create a dedicated section for grid controls
+  const gridSection = document.createElement('div');
+  gridSection.className = 'mt-3 p-2 bg-gray-100 rounded';
+  gridSection.innerHTML = `
+    <h4 class="text-xs font-bold mb-1">Grid Alignment</h4>
+    <div id="bgCoordinates" class="text-xs text-center mb-2">Position: (0, 0)</div>
+    <button id="alignBgToGrid" class="w-full p-1 bg-blue-100 rounded border border-blue-300 text-xs">Snap to Grid</button>
+    <div class="text-xs mt-1 text-gray-500">Hold Shift while dragging to snap</div>
+  `;
+  bgControlsDiv.appendChild(gridSection);
+  
+  // Add event listener for grid align button
+  document.getElementById('alignBgToGrid').addEventListener('click', function() {
+    if (backgroundImages[view.layer]) {
+      const bg = backgroundImages[view.layer];
+      
+      // Snap coordinates to grid
+      bg.x = Math.round(bg.x / gridSize) * gridSize;
+      bg.y = Math.round(bg.y / gridSize) * gridSize;
+      
+      console.log(`Background image aligned to grid at (${bg.x}, ${bg.y})`);
+      updateCoordinatesDisplay();
+      redraw();
+    }
+  });
+  
+  // Function to update coordinates display
+  function updateCoordinatesDisplay() {
+    const coordsDisplay = document.getElementById('bgCoordinates');
+    if (coordsDisplay && backgroundImages[view.layer]) {
+      const bg = backgroundImages[view.layer];
+      coordsDisplay.textContent = `Position: (${Math.round(bg.x)}, ${Math.round(bg.y)})`;
+    }
+  }
+  
+  // IMPORTANT: Create clean replacements for the mouse event handlers
+  // We need to be careful not to create an infinite loop of function calls
+  
+  // Store original functions
+  const originalMouseDown = window.handleMouseDown;
+  const originalMouseMove = window.handleMouseMove;
+  const originalMouseUp = window.handleMouseUp;
+  
+  // Replace mouseDown
+  window.handleMouseDown = function(event) {
+    // Let the original function handle everything first
+    originalMouseDown.call(this, event);
+    
+    // Then update coordinates display if needed
+    if (isDraggingBgImage && backgroundImages[view.layer]) {
+      updateCoordinatesDisplay();
+    }
+  };
+  
+  // Replace mouseMove
+  window.handleMouseMove = function(event) {
+    // Special handling for background image dragging
+    if (isDraggingBgImage && backgroundImages[view.layer]) {
+      // Calculate delta with proper view zoom consideration
+      const deltaX = (event.pageX - bgImageDragStartX) / view.zoom;
+      const deltaY = (event.pageY - bgImageDragStartY) / view.zoom;
+      
+      // Update background position
+      backgroundImages[view.layer].x += deltaX;
+      backgroundImages[view.layer].y += deltaY;
+      
+      // Snap to grid if shift key is pressed
+      if (event.shiftKey) {
+        backgroundImages[view.layer].x = Math.round(backgroundImages[view.layer].x / gridSize) * gridSize;
+        backgroundImages[view.layer].y = Math.round(backgroundImages[view.layer].y / gridSize) * gridSize;
+      }
+      
+      // Update drag start position
+      bgImageDragStartX = event.pageX;
+      bgImageDragStartY = event.pageY;
+      
+      // Update coordinates display
+      updateCoordinatesDisplay();
+      
+      // Redraw
+      redraw();
+    } else {
+      // For non-background dragging, call the original function
+      originalMouseMove.call(this, event);
+    }
+  };
+  
+  // Replace mouseUp
+  window.handleMouseUp = function(event) {
+    const wasDraggingBgImage = isDraggingBgImage;
+    
+    // Call original function
+    originalMouseUp.call(this, event);
+    
+    // Update coordinates if we were dragging the background
+    if (wasDraggingBgImage) {
+      updateCoordinatesDisplay();
+    }
+  };
+  
+  console.log("Background grid alignment initialized");
+}
+
+// Add this to the initialization sequence
+if (document.readyState === "complete") {
+  // If the document is already loaded, run immediately
+  fixBackgroundImageGridAlignment();
+} else {
+  // Otherwise wait for the document to be ready
+  document.addEventListener("DOMContentLoaded", function() {
+    // Use a shorter timeout to ensure it runs before the other functions
+    setTimeout(fixBackgroundImageGridAlignment, 500);
+  });
+}
+
+// Call this function after the DOM is fully loaded
+document.addEventListener("DOMContentLoaded", function() {
+});
