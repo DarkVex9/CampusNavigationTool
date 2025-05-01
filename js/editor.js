@@ -146,52 +146,47 @@ function handleKeyPress(event) {
 // Delete the selected node
 function deleteSelectedNode() {
   if (!editorSelectedNode) return;
-  
-  // Disconnect all connections first
-  while(editorSelectedNode.connections && editorSelectedNode.connections.length > 0) {
-    const connNode = editorSelectedNode.connections[0].layer ?
-      nodeGraph[editorSelectedNode.connections[0].layer][editorSelectedNode.connections[0].id] :
-      nodeGraph[editorSelectedNode.layer][editorSelectedNode.connections[0].id];
-    
-    if (connNode) {
-      disconnectNodes(editorSelectedNode, connNode);
-    } else {
-      // Handle invalid connection - just remove it
-      editorSelectedNode.connections.splice(0, 1);
+
+  const nodeToDelete = editorSelectedNode;
+  const layer = nodeToDelete.layer;
+
+  // Safely disconnect all connections
+  if (nodeToDelete.connections) {
+    for (let conn of [...nodeToDelete.connections]) {
+      let targetNode = conn.layer 
+        ? nodeGraph[conn.layer][conn.id] 
+        : nodeGraph[layer][conn.id];
+      
+      if (targetNode && targetNode.connections) {
+        // Remove back-reference
+        targetNode.connections = targetNode.connections.filter(
+          c => !(c.id === nodeToDelete.id && (c.layer || layer) === layer)
+        );
+      }
     }
+    nodeToDelete.connections = [];
   }
-  
-  // Remove the node from any areas it's associated with
-  if (areas[editorSelectedNode.layer]) {
-    areas[editorSelectedNode.layer].forEach(area => {
+
+  // Remove from areas
+  if (areas[layer]) {
+    areas[layer].forEach(area => {
       if (area.nodes) {
-        const index = area.nodes.indexOf(editorSelectedNode.id);
-        if (index !== -1) {
-          area.nodes.splice(index, 1);
-        }
+        area.nodes = area.nodes.filter(id => id !== nodeToDelete.id);
       }
     });
   }
-  
-  // Remove from node graph
-  nodeGraph[editorSelectedNode.layer][editorSelectedNode.id] = null;
-  
-  // Remove from named nodes if it has a name
-  if (editorSelectedNode.name) {
-    const index = namedNodes[editorSelectedNode.layer].findIndex(
-      n => n.id === editorSelectedNode.id
-    );
-    if (index !== -1) {
-      namedNodes[editorSelectedNode.layer].splice(index, 1);
-    }
-    // Refresh suggestions
-    populateSuggestions();
+
+  // Remove from nodeGraph
+  nodeGraph[layer][nodeToDelete.id] = null;
+
+  // Remove from namedNodes
+  if (nodeToDelete.name && namedNodes[layer]) {
+    namedNodes[layer] = namedNodes[layer].filter(n => n.id !== nodeToDelete.id);
   }
-  
-  // Clear selection and hide panel
+
   editorSelectedNode = null;
   document.getElementById("nodePanel").style.display = "none";
-  
+
   redraw();
 }
 
