@@ -124,6 +124,7 @@ function updateMapImageTransform() {
 // Redraw the canvas
 function redraw() {
   console.log("Redrawing canvas. Current layer:", view.layer);
+  populateFloorChangeIndicators();
   console.log("Layer data:", layerData[view.layer]);
   console.log("Nodes in current layer:", nodeGraph[view.layer] ? nodeGraph[view.layer].filter(n => n !== null).length : 0);
   console.log("Areas in current layer:", areas[view.layer] ? areas[view.layer].length : 0);
@@ -177,6 +178,62 @@ function redraw() {
 
   drawNodeDebugInfo();
 }
+
+drawFloorChangeIndicators();
+
+function drawFloorChangeIndicators() {
+  if (!window.floorChangeIndicators || window.floorChangeIndicators.length === 0) return;
+
+  for (const indicator of window.floorChangeIndicators) {
+    const [cx, cy] = nodeToCanvasPos(indicator.toNode);
+
+    ctx.fillStyle = "#f59e0b"; // Orange
+    ctx.beginPath();
+    ctx.arc(cx, cy, 8, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.fillStyle = "#000";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(indicator.direction === "up" ? "↑" : "↓", cx, cy + 3);
+  }
+}
+
+function populateFloorChangeIndicators() {
+  window.floorChangeIndicators = [];
+
+  if (!nodeGraph[view.layer]) return;
+
+  for (const node of nodeGraph[view.layer]) {
+    if (!node || !node.connections) continue;
+
+    for (const conn of node.connections) {
+      if (conn.layer && conn.layer !== view.layer) {
+        const targetNode = nodeGraph[conn.layer]?.[conn.id];
+        if (!targetNode) continue;
+
+        // Determine direction if layer names follow "floorX"
+        let direction = "";
+        if (view.layer.startsWith("floor") && conn.layer.startsWith("floor")) {
+          const floorA = parseInt(view.layer.replace("floor", ""));
+          const floorB = parseInt(conn.layer.replace("floor", ""));
+          direction = (floorB > floorA) ? "up" : "down";
+        }
+
+        window.floorChangeIndicators.push({
+          x: node.x,
+          y: node.y,
+          radius: 10,
+          toLayer: conn.layer,
+          toNode: targetNode,
+          direction
+        });
+        break; // Only one indicator per node
+      }
+    }
+  }
+}
+
 
 function drawGridLines() {
   const gridSize = 50; // Size of grid squares in world units
@@ -423,16 +480,38 @@ function handleFloorChangeIndicatorClick(event) {
   const mouseY = event.pageY;
   
   // Check if click is on a floor change indicator
-  for (let i = 0; i < window.floorChangeIndicators.length; i++) {
-    const indicator = window.floorChangeIndicators[i];
-    const dx = mouseX - indicator.x;
-    const dy = mouseY - indicator.y;
-    const distance = Math.sqrt(dx*dx + dy*dy);
+  for (const ind of window.floorChangeIndicators || []) {
+    if (ind.toNode && ind.toLayer) {
+      // Standard indicator – go directly to layer
+      view.layer = ind.toLayer;
+      view.x = -ind.toNode.x;
+      view.y = -ind.toNode.y;
     
-    if (distance <= indicator.radius) {
-      // Show floor change dialog
-      showFloorChangeDialog(indicator.node, indicator.connectedLayers);
-      return true; // Indicator was clicked
+      const layerSelect = document.getElementById("layerSelect");
+      if (layerSelect) layerSelect.value = ind.toLayer;
+    
+      redraw();
+      return true;
+    } else if (ind.node && ind.connectedLayers) {
+      // Visual-only indicator – open the dialog
+      showFloorChangeDialog(ind.node, ind.connectedLayers);
+      return true;
+    }// Skip bad indicators
+  
+    const dx = event.pageX - ind.x;
+    const dy = event.pageY - ind.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+  
+    if (dist <= ind.radius) {
+      view.layer = ind.toLayer;
+      view.x = -ind.toNode.x;
+      view.y = -ind.toNode.y;
+  
+      const layerSelect = document.getElementById("layerSelect");
+      if (layerSelect) layerSelect.value = ind.toLayer;
+  
+      redraw();
+      return true;
     }
   }
   
@@ -1087,8 +1166,9 @@ function drawBackgroundImage() {
   const [canvasX, canvasY] = posToCanvasPos(bg.x, bg.y);
   
   // Apply zoom to width and height
-  const width = bg.width * view.zoom;
-  const height = bg.height * view.zoom;
+  const scale = view.zoom;
+  const width = (bg.originalWidth || bg.width) * scale;
+  const height = (bg.originalHeight || bg.height) * scale;
 
   ctx.globalAlpha = bg.opacity ?? 0.5;
   ctx.drawImage(bg.image, canvasX, canvasY, width, height);
@@ -1128,6 +1208,6 @@ function updateBackgroundImageUI() {
 }
 
 // Initialize drawing mode
-drawNodes = true; // Start with nodes visible for easier editing
+drawNodes = false; // Start with nodes visible for easier editing
 
 console.log("Extended UI initialization complete");

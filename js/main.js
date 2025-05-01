@@ -6,66 +6,73 @@
 var editorAllowed = true; // Whether editor tools are allowed
 var drawNodes = false;    // Whether to draw nodes by default
 var loadingCount = 0;
+window.floorChangeIndicators = []; // Array to track floor change indicators
 
 // Initialize the application
 function init() {
   console.log("Initializing Navigation Application");
-  
+
   // Set up canvas
   canvas = document.getElementById("overlay");
   if (!canvas) {
     console.error("Overlay canvas element not found!");
     return;
   }
-  
+
   ctx = canvas.getContext("2d");
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  
-  // Test Data only
-  // initializeTestData();
-  
-  // Then initialize UI elements
-  initUI();
-  
-  // Set up event listeners
-  setupEventListeners();
 
+  initUI();
+  setupEventListeners();
   setupSaveAreaButtonListener();
-  
-  
-  // Keep editor tools hidden by default
+
   editorContainer = document.getElementById("editorTools");
   if (editorContainer) {
     editorContainer.style.display = "none";
-    
-    // Update toggle button text accordingly
     const toggleBtn = document.getElementById("toggleEditor");
-    if (toggleBtn) {
-      toggleBtn.textContent = "Show Editor Tools";
-    }
+    if (toggleBtn) toggleBtn.textContent = "Show Editor Tools";
   }
-  
-  // Initialize with drawing disabled by default
+
+  // IMPORTANT: Set drawNodes to false here to keep nodes hidden by default
   drawNodes = false;
-  
-  // Reset the view to center
   view.x = 0;
   view.y = 0;
   view.zoom = 1;
   view.layer = 'outside';
-   
-  // Initial render
-  redraw();
-   
-  // Check map setup
-  checkMapSetup(); 
-  
-  console.log("Initialization complete");
-  
-  createNodeShiftControls();
 
-  initializeEnhancements();
+  redraw();
+  checkMapSetup();
+  createNodeShiftControls();
+}
+
+function handleFloorChangeIndicatorClick(event) {
+  const [x, y] = canvasPosToPos(event.pageX, event.pageY); // Convert to world coordinates
+
+  for (const ind of window.floorChangeIndicators || []) {
+    const dx = x - ind.x;
+    const dy = y - ind.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist <= ind.radius) {
+      if (!ind.toNode) {
+        console.warn("⛔ Floor indicator missing toNode reference:", ind);
+        return false;
+      }
+
+      view.layer = ind.toLayer;
+      view.x = -ind.toNode.x;
+      view.y = -ind.toNode.y;
+
+      const layerSelect = document.getElementById("layerSelect");
+      if (layerSelect) layerSelect.value = ind.toLayer;
+
+      redraw();
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // Setup all event listeners
@@ -738,8 +745,13 @@ function initializeEnhancements() {
     }
     
     // Center view on start node
-    view.x = -startNode.x;
-    view.y = -startNode.y;
+    if (!ind.toNode) {
+      console.warn("⛔ Floor indicator has no target node:", ind);
+      return false;
+    }
+    
+    view.x = -ind.toNode.x;
+    view.y = -ind.toNode.y;
     
     redraw();
   };
@@ -779,3 +791,41 @@ function initializeEnhancements() {
   
   console.log("Navigation enhancements initialized");
 }
+
+window.addEventListener("load", () => {
+  console.log("🚀 Finalizing mouse override for indicators...");
+  const originalMouseDown = window.handleMouseDown;
+  window.handleMouseDown = function(event) {
+    if (handleFloorChangeIndicatorClick(event)) return;
+    if (typeof handlePathTransitionClick === "function" && handlePathTransitionClick(event)) return;
+    if (typeof originalMouseDown === "function") originalMouseDown.call(this, event);
+  };
+});
+
+window.addEventListener("load", () => {
+  console.log("🚀 Finalizing enhancements after all scripts are loaded");
+  initializeEnhancements();
+});
+
+
+// Call it after initialization
+document.addEventListener("DOMContentLoaded", function() {
+  // Wait a bit for everything to load properly
+  setTimeout(toggleNodesOff, 1000);
+});
+
+function toggleNodesOff() {
+  // If nodes are visible, toggle them off
+  if (drawNodes) {
+    drawNodes = false;
+    console.log("Nodes visibility turned OFF by auto-toggle");
+    redraw();
+  }
+}
+
+// Call it after initialization
+document.addEventListener("DOMContentLoaded", function() {
+  // Wait a bit for everything to load properly
+  setTimeout(toggleNodesOff, 1000);
+});
+

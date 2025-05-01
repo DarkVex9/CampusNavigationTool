@@ -257,6 +257,45 @@ function drawPath(path) {
   } else if (i === path.length - 1) {
     drawPathMarker(path[i], "end");
   }
+
+  for (const node of path) {
+    for (const conn of node.connections || []) {
+      if (!conn.layer || conn.layer === node.layer) continue;
+  
+      const targetNode = nodeGraph[conn.layer]?.[conn.id];
+      if (!targetNode) continue;
+  
+      // Only add if stair or elevator
+      if (
+        node.type === "stairs" || node.type === "elevator" ||
+        targetNode.type === "stairs" || targetNode.type === "elevator"
+      ) {
+        const [x, y] = nodeToCanvasPos(node);
+        window.floorChangeIndicators.push({
+          x,
+          y,
+          radius: 12,
+          fromNode: node,
+          toNode: targetNode,
+          toLayer: conn.layer,
+          type: targetNode.type
+        });
+  
+        // Draw indicator circle
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = conn.layer > node.layer ? "#22c55e" : "#3b82f6"; // green for up, blue for down
+        ctx.fill();
+  
+        // Draw arrow or text
+        ctx.fillStyle = "#fff";
+        ctx.font = "10px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(conn.layer > node.layer ? "↑" : "↓", x, y + 3);
+      }
+    }
+  }
+
 }
 
 function handlePathTransitionClick(event) {

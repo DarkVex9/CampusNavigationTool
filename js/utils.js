@@ -237,7 +237,7 @@ function importMapFromFile(file) {
         */
         
         // IMPORTANT: Enable node drawing after loading map
-        drawNodes = true;
+        drawNodes = false;
         
         // Update UI
         checkMapSetup();
@@ -374,7 +374,7 @@ function loadMapFromLocalStorage() {
     }
 
     // IMPORTANT: Enable node drawing after loading map
-    drawNodes = true;
+    drawNodes = false;
 
     // Update UI
     checkMapSetup();

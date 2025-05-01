@@ -121,7 +121,7 @@ function processMapData(importData) {
   }
 
   // Enable node drawing
-  drawNodes = true;
+  drawNodes = false;
 
   validateAllConnections();        // validate all connections
   normalizeLayerReferences();       // normalize layer references

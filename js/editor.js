@@ -279,7 +279,7 @@ function handleMouseDown(event) {
     } else if (editorMode === "add") {
       const worldPos = canvasPosToPos(event.pageX, event.pageY);
       editorSelectedNode = createNode(view.layer, worldPos[0], worldPos[1]);
-      drawNodes = true;
+      drawNodes = false;
       
       // Make nodes more visible by giving them a name by default
       editorSelectedNode.name = "Node " + editorSelectedNode.id;
@@ -1230,3 +1230,5 @@ function handleFloorChangeIndicatorClick(event) {
 
   return false;
 }
+
+window.handleMouseDown = handleMouseDown;
