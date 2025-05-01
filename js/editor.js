@@ -227,6 +227,10 @@ function handleMouseDown(event) {
   if (event.button !== 0) {
     return; // Only handle left clicks
   }
+
+  if (handleFloorChangeIndicatorClick(event)) {
+    return; // Handled by the indicator click
+  }
   
   if (event.target === canvas || event.target === document.body || event.target.tagName === "IMG") {
     // Add this new condition for background image dragging

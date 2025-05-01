@@ -130,6 +130,8 @@ function redraw() {
   console.log("drawNodes flag:", drawNodes);
   console.log("View settings:", JSON.stringify(view));
 
+  window.floorChangeIndicators = [];
+
   // Clear the canvas first
   if (!ctx || !canvas) {
     console.error("Canvas context or canvas not initialized");
@@ -311,6 +313,11 @@ function drawNodesAndConnections() {
       ctx.font = "bold 10px Arial";
       ctx.fillText("⊗", x - 12, y - 10); // Symbol for endpoint
     }
+
+    // NEW CODE: Draw floor change indicators for nodes connected to other floors
+    if (hasFloorChangeConnections(node)) {
+      drawFloorChangeIndicator(node, x, y);
+    }
   }
   
   // Highlight selected node
@@ -322,6 +329,216 @@ function drawNodesAndConnections() {
     ctx.arc(x, y, editorStyle.nodeRadius * 2, 0, 2 * Math.PI);
     ctx.stroke();
   }
+}
+
+/**
+ * Check if a node has connections to other floors
+ */
+function hasFloorChangeConnections(node) {
+  if (!node.connections) return false;
+  
+  for (let i = 0; i < node.connections.length; i++) {
+    const conn = node.connections[i];
+    if (conn.layer && conn.layer !== node.layer) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Draw a floor change indicator for a node
+ */
+function drawFloorChangeIndicator(node, x, y) {
+  // Get connected layers
+  const connectedLayers = [];
+  
+  for (let i = 0; i < node.connections.length; i++) {
+    const conn = node.connections[i];
+    if (conn.layer && conn.layer !== node.layer && !connectedLayers.includes(conn.layer)) {
+      connectedLayers.push(conn.layer);
+    }
+  }
+  
+  // Draw indicator icon based on node type (elevator or stairs)
+  const isElevator = node.type === "elevator";
+  const isStairs = node.type === "stairs";
+  
+  // Background for the indicator
+  ctx.fillStyle = isElevator ? "#F8BBD0" : isStairs ? "#FFE0B2" : "#B3E5FC";
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 1;
+  
+  // Draw a small icon above the node
+  const iconX = x;
+  const iconY = y - 15;
+  const iconSize = 12;
+  
+  // Background circle
+  ctx.beginPath();
+  ctx.arc(iconX, iconY, iconSize, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
+  
+  // Icon symbol
+  ctx.fillStyle = "#333";
+  ctx.font = "bold 10px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  
+  if (isElevator) {
+    ctx.fillText("⇅", iconX, iconY); // Elevator symbol
+  } else if (isStairs) {
+    ctx.fillText("⥮", iconX, iconY); // Stairs symbol
+  } else {
+    ctx.fillText("⇵", iconX, iconY); // Generic floor change
+  }
+  
+  // Store information for click handling
+  if (!window.floorChangeIndicators) {
+    window.floorChangeIndicators = [];
+  }
+  
+  // Add this indicator to the tracking array for click detection
+  window.floorChangeIndicators.push({
+    x: iconX,
+    y: iconY,
+    radius: iconSize,
+    node: node,
+    connectedLayers: connectedLayers
+  });
+}
+
+/**
+ * Handle click events on floor change indicators
+ * Add this to the handleMouseDown function in editor.js
+ */
+function handleFloorChangeIndicatorClick(event) {
+  if (!window.floorChangeIndicators || window.floorChangeIndicators.length === 0) {
+    return false;
+  }
+  
+  const mouseX = event.pageX;
+  const mouseY = event.pageY;
+  
+  // Check if click is on a floor change indicator
+  for (let i = 0; i < window.floorChangeIndicators.length; i++) {
+    const indicator = window.floorChangeIndicators[i];
+    const dx = mouseX - indicator.x;
+    const dy = mouseY - indicator.y;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    
+    if (distance <= indicator.radius) {
+      // Show floor change dialog
+      showFloorChangeDialog(indicator.node, indicator.connectedLayers);
+      return true; // Indicator was clicked
+    }
+  }
+  
+  return false; // No indicator was clicked
+}
+
+/**
+ * Show a dialog for changing floors
+ */
+function showFloorChangeDialog(node, connectedLayers) {
+  // Create modal dialog
+  const dialog = document.createElement("div");
+  dialog.className = "floor-change-dialog";
+  dialog.style.position = "fixed";
+  dialog.style.top = "50%";
+  dialog.style.left = "50%";
+  dialog.style.transform = "translate(-50%, -50%)";
+  dialog.style.backgroundColor = "white";
+  dialog.style.padding = "20px";
+  dialog.style.borderRadius = "8px";
+  dialog.style.boxShadow = "0 0 10px rgba(0,0,0,0.3)";
+  dialog.style.zIndex = "1000";
+  dialog.style.width = "300px";
+  
+  // Create dialog content
+  dialog.innerHTML = `
+    <h3 style="margin-top: 0; margin-bottom: 15px;">Floor Change</h3>
+    <p>${node.name || 'This location'} connects to:</p>
+    <div id="floorOptions" style="margin-bottom: 15px;"></div>
+    <div style="text-align: right;">
+      <button id="cancelFloorChange" style="padding: 5px 10px; margin-right: 5px;">Cancel</button>
+    </div>
+  `;
+  
+  document.body.appendChild(dialog);
+  
+  // Add connected layer options
+  const floorOptions = document.getElementById("floorOptions");
+  
+  connectedLayers.forEach(layer => {
+    // Find the destination node on that layer
+    let destinationNode = null;
+    for (let i = 0; i < node.connections.length; i++) {
+      const conn = node.connections[i];
+      if (conn.layer === layer) {
+        destinationNode = nodeGraph[layer][conn.id];
+        break;
+      }
+    }
+    
+    // Create a button for this layer
+    const button = document.createElement("button");
+    button.style.display = "block";
+    button.style.width = "100%";
+    button.style.padding = "8px";
+    button.style.margin = "5px 0";
+    button.style.textAlign = "left";
+    button.style.backgroundColor = "#f0f0f0";
+    button.style.border = "1px solid #ddd";
+    button.style.borderRadius = "4px";
+    button.style.cursor = "pointer";
+    
+    // Format display name
+    let displayName = layer;
+    if (layer === "outside") {
+      displayName = "Outside";
+    } else if (layer.startsWith("floor")) {
+      displayName = "Floor " + layer.substring(5);
+    }
+    
+    button.innerHTML = `
+      <strong>${displayName}</strong>
+      ${destinationNode && destinationNode.name ? `<br><span style="font-size: 0.9em;">To: ${destinationNode.name}</span>` : ''}
+    `;
+    
+    // Add click handler
+    button.addEventListener("click", function() {
+      // Change to the selected layer
+      view.layer = layer;
+      
+      // Update the layer dropdown
+      const layerSelect = document.getElementById("layerSelect");
+      if (layerSelect) {
+        layerSelect.value = layer;
+      }
+      
+      // If we have a destination node, center view on it
+      if (destinationNode) {
+        view.x = -destinationNode.x;
+        view.y = -destinationNode.y;
+      }
+      
+      // Remove the dialog
+      document.body.removeChild(dialog);
+      
+      // Update the display
+      redraw();
+    });
+    
+    floorOptions.appendChild(button);
+  });
+  
+  // Add cancel button handler
+  document.getElementById("cancelFloorChange").addEventListener("click", function() {
+    document.body.removeChild(dialog);
+  });
 }
 
 // Draw a node with its type-specific styling

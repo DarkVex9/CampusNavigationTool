@@ -64,6 +64,8 @@ function init() {
   console.log("Initialization complete");
   
   createNodeShiftControls();
+
+  initializeEnhancements();
 }
 
 // Setup all event listeners
@@ -645,3 +647,135 @@ if (document.readyState === "complete") {
 // Call this function after the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", function() {
 });
+
+function initializeEnhancements() {
+  console.log("Initializing navigation enhancements...");
+  
+  // Add global arrays for tracking interactive elements if they don't exist
+  if (!window.floorChangeIndicators) {
+    window.floorChangeIndicators = [];
+  }
+  
+  if (!window.pathLayerTransitions) {
+    window.pathLayerTransitions = [];
+  }
+  
+  // Override the existing handleMouseDown function with our enhanced version
+  const originalHandleMouseDown = window.handleMouseDown;
+  window.handleMouseDown = function(event) {
+    // Check for floor change indicator clicks
+    if (handleFloorChangeIndicatorClick(event)) {
+      return; // Handled by the indicator click
+    }
+    
+    // Check for path transition clicks
+    if (handlePathTransitionClick(event)) {
+      return; // Handled by the path transition click
+    }
+    
+    // Call the original function for other click handling
+    originalHandleMouseDown.call(this, event);
+  };
+  
+  // Override the redraw function to clear indicators and transitions
+  const originalRedraw = window.redraw;
+  window.redraw = function() {
+    // Clear floor change indicators and path transitions
+    window.floorChangeIndicators = [];
+    window.pathLayerTransitions = [];
+    
+    // Call the original redraw function
+    originalRedraw.call(this);
+  };
+  
+  // Override the handleGoButton function for better preference handling
+  const originalHandleGoButton = window.handleGoButton;
+  window.handleGoButton = function() {
+    console.log("Enhanced Go Button Pressed");
+    
+    if (Object.keys(nodeGraph).length === 0 || loadingCount !== 0) {
+      console.log("Search canceled - Data not ready");
+      alert("Map data is not fully loaded yet. Please try again in a moment.");
+      return;
+    }
+    
+    let startNode = findByName(document.getElementById("origin").value);
+    let endNode = findByName(document.getElementById("destination").value);
+    
+    if (!startNode || !endNode) {
+      console.log("Search canceled - Couldn't find nodes");
+      alert("Could not find one or both of the specified locations. Please check your input.");
+      return;
+    }
+    
+    // Get user preferences with proper checkbox handling
+    const preferences = {
+      avoidStairs: document.getElementById("avoidStairs").checked,
+      avoidElevators: document.getElementById("avoidElevators").checked
+    };
+    
+    console.log("Path preferences:", preferences);
+    
+    // Find path with preferences
+    let path = findPath(startNode, endNode, preferences);
+    
+    if (!path) {
+      console.log("Path not found");
+      alert("No path found between these locations.");
+      return;
+    }
+    
+    currentPath = path;
+    console.log("Path found with", path.length, "nodes");
+    
+    // Auto-switch to the layer of the starting node
+    if (startNode.layer !== view.layer) {
+      view.layer = startNode.layer;
+      const layerSelect = document.getElementById("layerSelect");
+      if (layerSelect) {
+        layerSelect.value = startNode.layer;
+      }
+    }
+    
+    // Center view on start node
+    view.x = -startNode.x;
+    view.y = -startNode.y;
+    
+    redraw();
+  };
+  
+  // Add event listeners for preference checkboxes to trigger path recalculation
+  document.getElementById("avoidStairs").addEventListener("change", function() {
+    if (currentPath) {
+      const startNode = findByName(document.getElementById("origin").value);
+      const endNode = findByName(document.getElementById("destination").value);
+      if (startNode && endNode) {
+        const preferences = {
+          avoidStairs: document.getElementById("avoidStairs").checked,
+          avoidElevators: document.getElementById("avoidElevators").checked
+        };
+        console.log("Recalculating path with updated preferences:", preferences);
+        currentPath = findPath(startNode, endNode, preferences);
+        redraw();
+      }
+    }
+  });
+  
+  document.getElementById("avoidElevators").addEventListener("change", function() {
+    if (currentPath) {
+      const startNode = findByName(document.getElementById("origin").value);
+      const endNode = findByName(document.getElementById("destination").value);
+      if (startNode && endNode) {
+        const preferences = {
+          avoidStairs: document.getElementById("avoidStairs").checked,
+          avoidElevators: document.getElementById("avoidElevators").checked
+        };
+        console.log("Recalculating path with updated preferences:", preferences);
+        currentPath = findPath(startNode, endNode, preferences);
+        redraw();
+      }
+    }
+  });
+  
+  console.log("Navigation enhancements initialized");
+}
