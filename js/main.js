@@ -62,6 +62,8 @@ function init() {
   checkMapSetup(); 
   
   console.log("Initialization complete");
+  
+  createNodeShiftControls();
 }
 
 // Setup all event listeners

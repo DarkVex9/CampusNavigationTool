@@ -14,6 +14,35 @@ let rectEndPos = null;
 var isDraggingBgImage = false;
 var bgImageDragStartX = 0;
 var bgImageDragStartY = 0;
+var nodeShiftStepSize = 1;
+
+function createNodeShiftControls(){
+  // Add position controls
+  const nodeShiftControlsDiv = document.createElement('div');
+  nodeShiftControlsDiv.className = 'grid grid-cols-2 gap-2 mb-2';
+  nodeShiftControlsDiv.innerHTML = `
+    <button id="nodeShiftLeftBtn" class="w-full p-1 bg-gray-200 rounded border border-gray-300 text-xs">←</button>
+    <button id="nodeShiftRightBtn" class="w-full p-1 bg-gray-200 rounded border border-gray-300 text-xs">→</button>
+    <button id="nodeShiftUpBtn" class="w-full p-1 bg-gray-200 rounded border border-gray-300 text-xs">↑</button>
+    <button id="nodeShiftDownBtn" class="w-full p-1 bg-gray-200 rounded border border-gray-300 text-xs">↓</button>
+  `;
+  document.getElementById("editorTools").appendChild(document.createElement("p").appendChild(document.createTextNode("Shift all nodes in layer")))
+  let stepSizeControl = document.createElement("input")
+  stepSizeControl.type = "number";
+  stepSizeControl.min = 1;
+  stepSizeControl.step = 1;
+  nodeShiftControlsDiv.appendChild(document.createElement("p").appendChild(document.createTextNode("Step Size")))
+  nodeShiftControlsDiv.appendChild(stepSizeControl);
+  document.getElementById("editorTools").appendChild(nodeShiftControlsDiv);
+  stepSizeControl.value = nodeShiftStepSize;
+  stepSizeControl.addEventListener('change',(event)=>{nodeShiftStepSize = parseInt(event.target.value);});
+
+  document.getElementById("nodeShiftLeftBtn").addEventListener('click',()=>{shiftLayer(-1*nodeShiftStepSize,0);})
+  document.getElementById("nodeShiftRightBtn").addEventListener('click',()=>{shiftLayer(nodeShiftStepSize,0);})
+  document.getElementById("nodeShiftUpBtn").addEventListener('click',()=>{shiftLayer(0,-1*nodeShiftStepSize);})
+  document.getElementById("nodeShiftDownBtn").addEventListener('click',()=>{shiftLayer(0,nodeShiftStepSize);})
+}
+
 
 // Handle key press events
 function handleKeyPress(event) {

@@ -168,12 +168,14 @@ function importMapFromFile(file) {
         const importData = JSON.parse(e.target.result);
         
         // Reset current data
+        /*
         nodeGraph = {};
         namedNodes = {};
         areas = {};
         layerData = {};
         backgroundImages = {};
         loadedLayers = [];
+        */
 
         // Load each layer
         for (const layerName in importData.layers) {
@@ -225,10 +227,12 @@ function importMapFromFile(file) {
           }
         }
         
+        /*
         // Restore view layer
         if (loadedLayers.length > 0) {
           view.layer = loadedLayers[0];
         }
+        */
         
         // IMPORTANT: Enable node drawing after loading map
         drawNodes = true;
@@ -388,4 +392,13 @@ function snapToGrid(x, y, gridSize = 50) {
     Math.round(x / gridSize) * gridSize,
     Math.round(y / gridSize) * gridSize
   ];
+}
+
+function shiftLayer(x,y){
+  console.log("shift",x,y);
+  for(let i=0;i<nodeGraph[view.layer].length;i++){
+    nodeGraph[view.layer][i].x += x;
+    nodeGraph[view.layer][i].y += y;
+  }
+  redraw();
 }
